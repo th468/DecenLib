@@ -34,7 +34,7 @@ def login_view(request):
                 redirect_url = "accounts:index"
             return redirect(redirect_url)
         else:
-            login_form.add_error("email", "ログインに失敗しました")
+            login_form.add_error(None, "ログインに失敗しました")
 
 
     return render(request,"accounts/login.html", context={

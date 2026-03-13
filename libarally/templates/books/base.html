@@ -14,7 +14,6 @@
              <a href="{% url 'accounts:logout' %}">ログアウト</a>
              {% endif %}
              <a href="{% url 'accounts:info' %}">ユーザー画面</a>
-             <a href="{% url 'books:booklist' %}">書籍一覧</a>
         </nav>
         <p>{{ user }}: {{user.is_authenticated }}</p>
         <div>

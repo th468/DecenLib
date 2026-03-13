@@ -1,0 +1,32 @@
+{% extends "books/base.html" %}
+{% block content %}
+
+
+
+
+<h1>{{ book.biblio.title }}</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>タイトル</th>
+            <th>著者</th>
+            <th>利用可否</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{book.biblio.title}}</td>
+            <td>{{book.biblio.author}}</td>
+            <td>{{book.is_available|yesno:"貸出可,貸出中" }}</td>
+        </tr>
+    </tbody>
+</table>
+{% if request.GET.q %}
+    <a href="{% url "books:booklist" %}?q={{ request.GET.q}}">検索結果に戻る</a>
+{% else %}
+    <a href="{% url "books:booklist" %}">書籍一覧に戻る</a>
+{% endif %}
+
+
+{% endblock content %}
