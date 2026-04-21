@@ -4,6 +4,11 @@
 <form method="POST">
     {% csrf_token %}
     {{ login_form.as_p }}
+
+    {% if next %}
+        <input type="hidden" name="next" value="{{ next }}">
+    {% endif %}
+    
     <input type="submit" value="ログイン">
 </form>
 {% endblock content %}

@@ -210,70 +210,71 @@ class Lending(TransactionBase):
             COMPLETED = 3, "貸出済み"      # 予約していた本が実際に貸し出された状態
             CANCELED = 4, "キャンセル"      # ユーザーまたはスタッフによる取り消し
             EXPIRED = 5, "期限切れ"        # 取置期限（reserved_until）を過ぎた状態
-    user = models.ForeignKey(
-        'accounts.User', 
-        on_delete=models.CASCADE, 
-        related_name="reservations",
-        verbose_name="利用者"
-    )
-    biblio = models.ForeignKey(
-        'books.Biblio', 
-        on_delete=models.PROTECT, 
-        related_name="reservations",
-        verbose_name="予約書誌"
-    )
-    # 予約時点では特定の「本（個体）」は決まっていないため、null=Trueとする
-    book = models.ForeignKey(
-        'books.Book', 
-        null=True, 
-        blank=True, 
-        on_delete=models.SET_NULL, 
-        related_name="reserved_by",
-        verbose_name="予約書籍"
-    )
+            
+        user = models.ForeignKey(
+            'accounts.User', 
+            on_delete=models.CASCADE, 
+            related_name="reservations",
+            verbose_name="利用者"
+        )
+        biblio = models.ForeignKey(
+            'books.Biblio', 
+            on_delete=models.PROTECT, 
+            related_name="reservations",
+            verbose_name="予約書誌"
+        )
+        # 予約時点では特定の「本（個体）」は決まっていないため、null=Trueとする
+        book = models.ForeignKey(
+            'books.Book', 
+            null=True, 
+            blank=True, 
+            on_delete=models.SET_NULL, 
+            related_name="reserved_by",
+            verbose_name="予約書籍"
+        )
 
-    status = models.IntegerField(
-        "予約状況", 
-        choices=Status.choices, 
-        default=Status.WAITING, 
-        db_index=True
-    )
-    reserved_until = models.DateField(
-        "取置期限", 
-        null=True, 
-        blank=True
-    )
-    
-    # is_activeはstatusで代用可能だが、検索効率のために残すことも検討
-    is_active = models.BooleanField("有効な予約か", default=True)
+        status = models.IntegerField(
+            "予約状況", 
+            choices=Status.choices, 
+            default=Status.WAITING, 
+            db_index=True
+        )
+        reserved_until = models.DateField(
+            "取置期限", 
+            null=True, 
+            blank=True
+        )
+        
+        # is_activeはstatusで代用可能だが、検索効率のために残すことも検討
+        is_active = models.BooleanField("有効な予約か", default=True)
 
-    class Meta:
-        verbose_name = "予約情報"
-        verbose_name_plural = "予約情報"
-        ordering = ['created_at'] # 先着順に処理するための設定
+        class Meta:
+            verbose_name = "予約情報"
+            verbose_name_plural = "予約情報"
+            ordering = ['created_at'] # 先着順に処理するための設定
 
-    def clean(self):
-        super().clean()
-        # 1. 既に同じ本を借りている場合は予約できない
-        from .models import Lending
-        if Lending.objects.active().filter(user=self.user, book__biblio=self.biblio).exists():
-            raise ValidationError("現在貸出中の書籍を予約することはできません。")
+        def clean(self):
+            super().clean()
+            # 1. 既に同じ本を借りている場合は予約できない
+            from .models import Lending
+            if Lending.objects.active().filter(user=self.user, book__biblio=self.biblio).exists():
+                raise ValidationError("現在貸出中の書籍を予約することはできません。")
 
-        # 2. 重複予約のチェック（既に「待ち」または「準備完了」の予約があるか）
-        if self.status == self.Status.WAITING:
-            duplicate = self.objects.active().filter(
-                user=self.user, 
-                biblio=self.biblio
-            ).exclude(pk=self.pk).exists()
-            if duplicate:
-                raise ValidationError("既にこの本に有効な予約が入っています。")
+            # 2. 重複予約のチェック（既に「待ち」または「準備完了」の予約があるか）
+            if self.status == self.Status.WAITING:
+                duplicate = self.objects.active().filter(
+                    user=self.user, 
+                    biblio=self.biblio
+                ).exclude(pk=self.pk).exists()
+                if duplicate:
+                    raise ValidationError("既にこの本に有効な予約が入っています。")
 
-    def mark_as_ready(self, book, days=7):
-        """書籍が返却された際に、予約を『準備完了』にする処理"""
-        self.status = self.Status.READY
-        self.book = book
-        self.reserved_until = timezone.now().date() + timezone.timedelta(days=days)
-        self.save()
+        def mark_as_ready(self, book, days=7):
+            """書籍が返却された際に、予約を『準備完了』にする処理"""
+            self.status = self.Status.READY
+            self.book = book
+            self.reserved_until = timezone.now().date() + timezone.timedelta(days=days)
+            self.save()
 
 
 #region仮置き、予約マネージャー

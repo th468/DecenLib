@@ -1,0 +1,50 @@
+{% extends "common/base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">{% if user.is_staff %}管理者ダッシュボード{% else %}マイページ{% endif %}</h2>
+    
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">蔵書を確認する</h5>
+                    <p class="card-text small text-muted">本を探したり、詳細情報を確認します。</p>
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'books:booklist' %}" class="list-group-item list-group-item-action">書籍一覧</a>
+                        <a href="{% url 'books:biblio_list' %}" class="list-group-item list-group-item-action">書誌データ一覧</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-success">マイライブラリ</h5>
+                    <p class="card-text small text-muted">現在の利用状況や履歴を管理します。</p>
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'accounts:info' %}" class="list-group-item list-group-item-action">貸出・予約状況</a>
+                        <a href="#" class="list-group-item list-group-item-action text-muted">お気に入り（開発中）</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">アカウント設定</h5>
+                    <p class="card-text small text-muted">登録情報の変更や管理業務を行います。</p>
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'accounts:regist' %}" class="list-group-item list-group-item-action">ユーザー登録（新規）</a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'books:manageindex' %}" class="list-group-item list-group-item-action fw-bold text-danger">管理者専用メニュー</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

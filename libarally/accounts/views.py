@@ -19,12 +19,14 @@ def regist(request):
 
 def login_view(request):
     login_form = UserLoginForm(request.POST or None)
-    next_url = request.GET.get("next")
+
+    next_url = request.GET.get("next") or request.POST.get("next")
+
     if login_form.is_valid():
         email = login_form.cleaned_data.get("email")
         password = login_form.cleaned_data.get("password")
-        user = authenticate(request, email=email,password=password )
-        print(f"Debug: User found -> {user}")
+        user = authenticate(request, email=email,password=password)
+
         if user is not None and user.is_authenticated:
             login(request, user)
             #ネクスト処理
@@ -39,6 +41,7 @@ def login_view(request):
 
     return render(request,"accounts/login.html", context={
         "login_form": login_form,
+        "next_url": next_url
     })
 
 def index(request):

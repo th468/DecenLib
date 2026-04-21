@@ -11,4 +11,4 @@ class BookListView(ListView):
 
 
 def index(request):
-    return render(request, "accounts/index.html")
+    return render(request, "common/base.html")
