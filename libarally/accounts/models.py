@@ -33,7 +33,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser,PermissionsMixin):
-    #region フィールド定義
+     #region フィールド定義
     em_num = models.CharField(
         verbose_name="社員番号", 
         max_length=150, 
@@ -50,8 +50,8 @@ class User(AbstractBaseUser,PermissionsMixin):
         )
     is_staff = models.BooleanField(
         verbose_name="管理者か",
-        default=False)
-    
+        default=False
+        )
     lending_limit = models.PositiveIntegerField(
         verbose_name="貸出上限冊数", 
         default=5,
@@ -62,6 +62,21 @@ class User(AbstractBaseUser,PermissionsMixin):
         default=14,
         help_text="このユーザーが一度の貸出で借りられる日数です。"
     )
+    name = models.CharField(
+        verbose_name="氏名", 
+        max_length=255,
+        null=True,
+        blank=True,
+        )
+    department = models.ForeignKey(
+        "Department", 
+        verbose_name="部署", 
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        )
+
+        
     #endregion
 
     objects= UserManager()
@@ -77,7 +92,7 @@ class User(AbstractBaseUser,PermissionsMixin):
         """現在の貸出中件数を返す"""
         # 循環参照を避けるためメソッド内でインポート
         from transactions.models import Lending
-        return self.lendings.filter(return_date__isnull=True).count()
+        return self.lending_set.filter(return_date__isnull=True).count()
 
     def can_lend(self):
         """貸出可能ならTrue、上限ならFalseを返す"""
@@ -86,3 +101,16 @@ class User(AbstractBaseUser,PermissionsMixin):
     class Meta:
         verbose_name = "ユーザー"
         verbose_name_plural = "ユーザー"
+
+
+class Department(models.Model):
+    name = models.CharField(
+        verbose_name="部署名",
+        max_length=255,
+        )
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        verbose_name = "部署"
+        verbose_name_plural = "部署"
