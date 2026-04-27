@@ -87,7 +87,6 @@ class Biblio(BaseModel):
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255)
     publisher = models.CharField(max_length=255)
-    price = models.IntegerField
     def __str__(self):
         return self.title
     def get_absolute_url(self):

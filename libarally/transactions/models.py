@@ -78,7 +78,7 @@ class LendingManager(models.Manager):
         
             #貸出情報の更新
             lending.return_date = timezone.now().date()
-            lending.status = self.Status.RETURNED
+            lending.status = self.model.Status.RETURNED
             lending.save(update_fields=["return_date", "status","updated_at"])
             #書籍の状況を更新
             book.status = book.Status.AVAILABLE
@@ -118,26 +118,6 @@ class LendingManager(models.Manager):
 
             return lending
 
-    # def report_loss(self, lending):後回し！！
-    #     """
-    #     [紛失報告メソッド]
-    #     1. 貸出レコードを「その他（紛失）」として閉じる
-    #     2. 書籍のステータスを「紛失」に変更する
-    #     """
-    #     with transaction.atomic():
-    #         lending, book = self._get_locked_lending_and_book(lending.pk)
-
-    #         # 貸出レコードの更新
-    #         lending.status = self.model.Status.OTHER
-    #         lending.remarks = (lending.remarks or "") + f"\n[{timezone.now().date()} 紛失報告あり]"
-    #         lending.save(update_fields=['status', 'remarks', 'updated_at'])
-
-    #         # 書籍ステータスの更新
-    #         # Book.Status.LOST が 4 などの想定
-    #         book.status = book.Status.LOST 
-    #         book.save(update_fields=['status', 'updated_at'])
-
-    #         return target_lending
 # 返却処理（書籍から逆引き）
     def collect_by_book(self, book, user): 
         with transaction.atomic():
@@ -155,13 +135,13 @@ class Lending(TransactionBase):
         RETURNED = 2, "返却済み"
         OTHER = 3, "その他、備考にて記入"
     
-    user = models.ForeignKey('accounts.User', 
-                             on_delete=models.CASCADE,
-                             related_name="lendings", 
-                             verbose_name="利用者")
+    user = models.ForeignKey(
+        'accounts.User', 
+        on_delete=models.CASCADE,
+        verbose_name="利用者"
+        )
     book = models.ForeignKey("books.Book", 
                              on_delete=models.PROTECT, 
-                             related_name="lendings", 
                              verbose_name="書籍")
     due_date = models.DateField("返却期限")
     return_date = models.DateField("返却日", null=True, blank=True)
@@ -189,7 +169,7 @@ class Lending(TransactionBase):
         # 2. ユーザーの貸出上限チェック
         active_loans = Lending.objects.filter(user=self.user, return_date__isnull=True).count()
         if not self.pk and not self.user.can_lend():
-            raise ValidationError(f"貸出上限（{self.user.lending_limit}件に達しています。")
+            raise ValidationError(f"貸出上限[{self.user.lending_limit}]件に達しています。")
         
         # 3. 延滞中でないかチェック
         #  if not self.pk and　self.user.
@@ -200,167 +180,172 @@ class Lending(TransactionBase):
 
 
 
-#予約関連モデル
 
-    class Reservation(TransactionBase):
+# region仮置き、予約マネージャー
+class ReservationQuerySet(models.QuerySet):
+    """
+    予約データの検索を便利にするカスタムQuerySet
+    """
+    def active(self):
+        """有効な（入荷待ち、または準備完了）予約を返す"""
+        return self.filter(status__in=[1, 2])  # 1: WAITING, 2: READY
 
-        class Status(models.IntegerChoices):
-            WAITING = 1, "入荷待ち"         # 書籍がすべて貸出中で、返却を待っている状態
-            READY = 2, "準備完了（取置中）" # 本が確保され、カウンターで受け取りを待っている状態
-            COMPLETED = 3, "貸出済み"      # 予約していた本が実際に貸し出された状態
-            CANCELED = 4, "キャンセル"      # ユーザーまたはスタッフによる取り消し
-            EXPIRED = 5, "期限切れ"        # 取置期限（reserved_until）を過ぎた状態
-            
-        user = models.ForeignKey(
-            'accounts.User', 
-            on_delete=models.CASCADE, 
-            related_name="reservations",
-            verbose_name="利用者"
-        )
-        biblio = models.ForeignKey(
-            'books.Biblio', 
-            on_delete=models.PROTECT, 
-            related_name="reservations",
-            verbose_name="予約書誌"
-        )
-        # 予約時点では特定の「本（個体）」は決まっていないため、null=Trueとする
-        book = models.ForeignKey(
-            'books.Book', 
-            null=True, 
-            blank=True, 
-            on_delete=models.SET_NULL, 
-            related_name="reserved_by",
-            verbose_name="予約書籍"
-        )
+    def waiting(self):
+        """入荷待ちの予約のみを返す"""
+        return self.filter(status=1)
 
-        status = models.IntegerField(
-            "予約状況", 
-            choices=Status.choices, 
-            default=Status.WAITING, 
-            db_index=True
-        )
-        reserved_until = models.DateField(
-            "取置期限", 
-            null=True, 
-            blank=True
-        )
-        
-        # is_activeはstatusで代用可能だが、検索効率のために残すことも検討
-        is_active = models.BooleanField("有効な予約か", default=True)
+    def expired(self):
+        """取置期限を過ぎている準備完了状態の予約を返す"""
+        return self.filter(status=2, reserved_until__lt=timezone.now().date())
 
-        class Meta:
-            verbose_name = "予約情報"
-            verbose_name_plural = "予約情報"
-            ordering = ['created_at'] # 先着順に処理するための設定
-
-        def clean(self):
-            super().clean()
-            # 1. 既に同じ本を借りている場合は予約できない
+class ReservationManager(models.Manager):
+    """
+    予約ロジックを管理するマネージャー
+    """
+    
+    def create_reservation(self, user, biblio):
+        """
+        予約を新規作成する
+        """
+        with transaction.atomic():
+            # 1. バリデーション：既に同じ書誌を借りていないか
             from .models import Lending
-            if Lending.objects.active().filter(user=self.user, book__biblio=self.biblio).exists():
+            if Lending.objects.active().filter(user=user, book__biblio=biblio).exists():
                 raise ValidationError("現在貸出中の書籍を予約することはできません。")
 
-            # 2. 重複予約のチェック（既に「待ち」または「準備完了」の予約があるか）
-            if self.status == self.Status.WAITING:
-                duplicate = self.objects.active().filter(
-                    user=self.user, 
-                    biblio=self.biblio
-                ).exclude(pk=self.pk).exists()
-                if duplicate:
-                    raise ValidationError("既にこの本に有効な予約が入っています。")
+            # 2. バリデーション：既に有効な予約を持っていないか
+            if self.get_queryset().active().filter(user=user, biblio=biblio).exists():
+                raise ValidationError("既にこの本に有効な予約が入っています。")
 
-        def mark_as_ready(self, book, days=7):
-            """書籍が返却された際に、予約を『準備完了』にする処理"""
-            self.status = self.Status.READY
-            self.book = book
-            self.reserved_until = timezone.now().date() + timezone.timedelta(days=days)
-            self.save()
+            # 予約作成
+            reservation = self.model(
+                user=user,
+                biblio=biblio,
+                status=1  # WAITING
+            )
+            reservation.full_clean()
+            reservation.save()
+            return reservation
 
-
-#region仮置き、予約マネージャー
-# class ReservationQuerySet(models.QuerySet):
-#     """
-#     予約データの検索を便利にするカスタムQuerySet
-#     """
-#     def active(self):
-#         """有効な（入荷待ち、または準備完了）予約を返す"""
-#         return self.filter(status__in=[1, 2])  # 1: WAITING, 2: READY
-
-#     def waiting(self):
-#         """入荷待ちの予約のみを返す"""
-#         return self.filter(status=1)
-
-#     def expired(self):
-#         """取置期限を過ぎている準備完了状態の予約を返す"""
-#         return self.filter(status=2, reserved_until__lt=timezone.now().date())
-
-# class ReservationManager(models.Manager):
-#     """
-#     予約ロジックを管理するマネージャー
-#     """
-    
-#     def create_reservation(self, user, biblio):
-#         """
-#         予約を新規作成する
-#         """
-#         with transaction.atomic():
-#             # 1. バリデーション：既に同じ書誌を借りていないか
-#             from .models import Lending
-#             if Lending.objects.active().filter(user=user, book__biblio=biblio).exists():
-#                 raise ValidationError("現在貸出中の書籍を予約することはできません。")
-
-#             # 2. バリデーション：既に有効な予約を持っていないか
-#             if self.get_queryset().active().filter(user=user, biblio=biblio).exists():
-#                 raise ValidationError("既にこの本に有効な予約が入っています。")
-
-#             # 予約作成
-#             reservation = self.model(
-#                 user=user,
-#                 biblio=biblio,
-#                 status=1  # WAITING
-#             )
-#             reservation.full_clean()
-#             reservation.save()
-#             return reservation
-
-#     def mark_as_ready(self, reservation, book):
-#         """
-#         本が返却された際などに、予約を「準備完了（取置中）」にする
-#         """
-#         with transaction.atomic():
-#             # 書籍をロック
-#             from books.models import Book
-#             target_book = Book.objects.select_for_update().get(pk=book.pk)
+    def mark_as_ready(self, reservation, book):
+        """
+        本が返却された際などに、予約を「準備完了（取置中）」にする
+        """
+        with transaction.atomic():
+            # 書籍をロック
+            from books.models import Book
+            target_book = Book.objects.select_for_update().get(pk=book.pk)
             
-#             # settings.pyから取置期間を取得（デフォルト7日）
-#             period_days = getattr(settings, 'RESERVATION_PERIOD_DAYS', 7)
+            # settings.pyから取置期間を取得（デフォルト7日）
+            period_days = getattr(settings, 'RESERVATION_PERIOD_DAYS', 7)
             
-#             reservation.status = 2  # READY
-#             reservation.book = target_book
-#             reservation.reserved_until = timezone.now().date() + timezone.timedelta(days=period_days)
+            reservation.status = 2  # READY
+            reservation.book = target_book
+            reservation.reserved_until = timezone.now().date() + timezone.timedelta(days=period_days)
             
-#             # 書籍側のステータスも「予約取置中」などの状態があれば更新
-#             # target_book.status = Book.Status.RESERVED 
-#             # target_book.save()
+            # 書籍側のステータスも「予約取置中」などの状態があれば更新
+            # target_book.status = Book.Status.RESERVED 
+            # target_book.save()
 
-#             reservation.save(update_fields=['status', 'book', 'reserved_until', 'updated_at'])
-#             return reservation
+            reservation.save(update_fields=['status', 'book', 'reserved_until', 'updated_at'])
+            return reservation
 
-#     def complete_reservation(self, reservation):
-#         """
-#         予約者が実際に本を借りた際、予約を完了状態にする
-#         """
-#         reservation.status = 3  # COMPLETED
-#         reservation.is_active = False
-#         reservation.save(update_fields=['status', 'is_active', 'updated_at'])
+    def complete_reservation(self, reservation):
+        """
+        予約者が実際に本を借りた際、予約を完了状態にする
+        """
+        reservation.status = 3  # COMPLETED
+        reservation.is_active = False
+        reservation.save(update_fields=['status', 'is_active', 'updated_at'])
 
-#     def cancel_reservation(self, reservation, remark=None):
-#         """
-#         予約をキャンセルする
-#         """
-#         reservation.status = 4  # CANCELED
-#         reservation.is_active = False
-#         if remark:
-#             reservation.remarks = (reservation.remarks or "") + f"\n[キャンセル理由: {remark}]"
-#         reservation.save(update_fields=['status', 'is_active', 'remarks', 'updated_at'])
-#endregion
+    def cancel_reservation(self, reservation, remark=None):
+        """
+        予約をキャンセルする
+        """
+        reservation.status = 4  # CANCELED
+        reservation.is_active = False
+        if remark:
+            reservation.remarks = (reservation.remarks or "") + f"\n[キャンセル理由: {remark}]"
+        reservation.save(update_fields=['status', 'is_active', 'remarks', 'updated_at'])
+# endregion
+
+
+
+#予約関連モデル
+
+class Reservation(TransactionBase):
+
+    class Status(models.IntegerChoices):
+        WAITING = 1, "入荷待ち"         # 書籍がすべて貸出中で、返却を待っている状態
+        READY = 2, "準備完了（取置中）" # 本が確保され、カウンターで受け取りを待っている状態
+        COMPLETED = 3, "貸出済み"      # 予約していた本が実際に貸し出された状態
+        CANCELED = 4, "キャンセル"      # ユーザーまたはスタッフによる取り消し
+        EXPIRED = 5, "期限切れ"        # 取置期限（reserved_until）を過ぎた状態
+        
+    user = models.ForeignKey(
+        'accounts.User', 
+        on_delete=models.CASCADE, 
+        verbose_name="利用者",
+    )
+    biblio = models.ForeignKey(
+        'books.Biblio', 
+        on_delete=models.PROTECT, 
+        verbose_name="予約書誌",
+    )
+    # 予約時点では特定の「本（個体）」は決まっていないため、null=Trueとする
+    book = models.ForeignKey(
+        'books.Book', 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL, 
+        verbose_name="予約書籍",
+    )
+
+    status = models.IntegerField(
+        "予約状況", 
+        choices=Status.choices, 
+        default=Status.WAITING, 
+        db_index=True
+    )
+    reserved_until = models.DateField(
+        "取置期限", 
+        null=True, 
+        blank=True
+    )
+
+    is_active = models.BooleanField(
+        "有効な予約か", 
+        default=True
+    )
+
+    objects = ReservationManager.from_queryset(ReservationQuerySet)()
+
+    class Meta:
+        verbose_name = "予約情報"
+        verbose_name_plural = "予約情報"
+        ordering = ['created_at'] # 先着順に処理するための設定
+
+    def clean(self):
+        super().clean()
+        # 1. 既に同じ本を借りている場合は予約できない
+        from .models import Lending
+        if Lending.objects.active().filter(user=self.user, book__biblio=self.biblio).exists():
+            raise ValidationError("現在貸出中の書籍を予約することはできません。")
+
+        # 2. 重複予約のチェック（既に「待ち」または「準備完了」の予約があるか）
+        if self.status == self.Status.WAITING:
+            duplicate = self.objects.active().filter(
+                user=self.user, 
+                biblio=self.biblio
+            ).exclude(pk=self.pk).exists()
+            if duplicate:
+                raise ValidationError("既にこの本に有効な予約が入っています。")
+
+    def mark_as_ready(self, book, days=7):
+        """書籍が返却された際に、予約を『準備完了』にする処理"""
+        self.status = self.Status.READY
+        self.book = book
+        self.reserved_until = timezone.now().date() + timezone.timedelta(days=days)
+        self.save()
+
+

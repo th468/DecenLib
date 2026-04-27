@@ -1,12 +1,38 @@
 import factory
 from factory.django import DjangoModelFactory
-from django.contrib.auth import get_user_model
+from .models import Biblio, Book, Shelf, Floor
 
-#Fakerの日本語化
-FakerJP = lambda provider: factory.Faker(provider, locale="ja_JP")
+class FloorFactory(DjangoModelFactory):
+    class Meta:
+        model = Floor
 
-User = get_user_model()
+    name = factory.Sequence(lambda n: f"{n + 1}F")
 
-class UserFactory(DjangoModelFactory):
-    class Meta : pass
 
+class ShelfFactory(DjangoModelFactory):
+    class Meta:
+        model = Shelf
+
+    name = factory.Sequence(lambda n: f"棚-{n:03d}")
+    floor = factory.SubFactory(FloorFactory)
+
+
+class BiblioFactory(DjangoModelFactory):
+    class Meta:
+        model = Biblio
+
+    # ISBNは主キーかつ一意である必要があるためSequenceを使用
+    isbn = factory.Sequence(lambda n: f"978-4-{n:08d}")
+    title = factory.Faker("word", locale="ja_JP")
+    author = factory.Faker("name", locale="ja_JP")
+    publisher = factory.Faker("company", locale="ja_JP")
+
+
+class BookFactory(DjangoModelFactory):
+    class Meta:
+        model = Book
+
+    biblio = factory.SubFactory(BiblioFactory)
+    shelf = factory.SubFactory(ShelfFactory)
+    status = Book.Status.AVAILABLE
+    # count は save メソッドで自動採番されるため、あえて指定しない

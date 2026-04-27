@@ -2,27 +2,40 @@ import factory
 from factory.django import DjangoModelFactory
 from django.contrib.auth import get_user_model
 
+from .models import Department
 
 User = get_user_model()
 
+class DepartmentFactory(DjangoModelFactory):
+    class Meta:
+        model = Department
+
+    name = factory.Faker("company", locale="ja_JP")
+
+
 class UserFactory(DjangoModelFactory):
-    class Meta :
+    class Meta:
         model = User
 
-    email = factory.Faker("email")
-    em_num = factory.Faker(lambda n: f"EM{1000 + n}")
-
+    # unique=True の項目には Sequence を使用
+    em_num = factory.Sequence(lambda n: f"EM{1000 + n}")
+    email = factory.Sequence(lambda n: f"user_{n}@example.com")
+    
+    # 日本語設定
+    name = factory.Faker("name", locale="ja_JP")
+    
     is_active = True
     is_staff = False
-
     lending_limit = 5
     lending_period_days = 14
+    
+    # ForeignKey の紐付け
+    department = factory.SubFactory(DepartmentFactory)
 
-    # パスワードを正しくセットするための処理、マネージャーのメソッドを呼び出す
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
+        """
+        パスワードをハッシュ化するため、マネージャーの create_user を経由させる
+        """
         manager = cls._get_manager(model_class)
-        password = kwargs.pop("password", "password123") # 後者はデフォルトパスワード
-        user = manager.create_user(password=password, *args, **kwargs)
-        return user
-
+        return manager.create_user(*args, **kwargs)
