@@ -132,5 +132,17 @@ LOGIN_URL = "accounts:login"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+from django.contrib.messages import constants as messages
+
+MESSAGE_TAGS = {
+    messages.DEBUG: 'secondary',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'danger',
+}
+
 # 予約の取置期間（日）
 RESERVATION_PERIOD_DAYS = 7
+
+
