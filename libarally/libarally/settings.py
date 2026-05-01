@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     "books",
     "transactions",
     "dashboard",
-    
+    "core",
 
 ]
 
