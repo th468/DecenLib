@@ -48,22 +48,14 @@ class BaseModel(models.Model):
         return f"[{self.pk}] {name}" if name else f"[{self.pk}] {self.__class__.__name__}"
     
     def delete(self, *args, **kwargs):
+        from .mixins import RenameUniqueFieldsMixin
         """個別の削除 (instance.delete()) を論理削除に書き換え"""
         self.is_active = False
 
-        # 子クラスで指定されたフィールドがあれば、一括でリネームを実行
-        for field_name in self.delete_unique_fields:
-            if hasattr(self, field_name):
-                self._apply_delete_suffix(field_name)
+        if isinstance(self, RenameUniqueFieldsMixin):
+            self.perform_rename()
         
         self.save(using=kwargs.get('using'))
-
-    def _apply_delete_suffix(self, field_name):
-        current_val = getattr(self, field_name)
-        # すでに削除済みサフィックスがついていないかチェック（二重付与防止）
-        if "_del_" not in str(current_val):
-            now = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-            setattr(self, field_name, f"{current_val}_del_{now}")
 
     def hard_delete(self):
         """物理削除を行いたい場合に使用"""

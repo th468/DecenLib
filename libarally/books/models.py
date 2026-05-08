@@ -1,6 +1,6 @@
 from django.db import models, transaction
 from django.urls import reverse
-from core.models import BaseModel
+from core.models.base import BaseModel
 
 
 """
