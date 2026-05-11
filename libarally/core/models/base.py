@@ -37,7 +37,7 @@ class BaseModel(models.Model):
     delete_unique_fields = []
 
     objects = BaseManager()
-    all_objects = models.Manager()
+    all_objects = BaseQuerySet.as_manager()
 
     class Meta:
         abstract = True
@@ -45,7 +45,7 @@ class BaseModel(models.Model):
     def __str__(self):
         # 名前かタイトルがあればそれを表示、なければIDを表示
         name = getattr(self, 'title', getattr(self, 'name', ''))
-        return f"[{self.pk}] {name}" if name else f"[{self.pk}] {self.__class__.__name__}"
+        return f"[{self.pk}] {name}({self.__class__.__name__})" if name else f"[{self.pk}] ({self.__class__.__name__})"
     
     def delete(self, *args, **kwargs):
         from .mixins import RenameUniqueFieldsMixin
