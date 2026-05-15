@@ -4,7 +4,7 @@ import factory
 
 from core.models.base import BaseModel
 from core.models.mixins import RenameUniqueFieldsMixin
-from core.tests.test_mixins import BaseCoreModelTest
+from core.tests.test_mixins import BaseCoreModelTestMixin
 
 # -----------------------------------------------------------------------------
 # 1. テスト用具象モデルの定義 (Dummy Models)
@@ -95,7 +95,7 @@ class UniqueRenameFactory(factory.django.DjangoModelFactory):
 # 4. テストクラスの実装
 # -----------------------------------------------------------------------------
 
-class BaseModelComprehensiveTest(SchemaManagedTestCase, BaseCoreModelTest):
+class BaseModelComprehensiveTest(SchemaManagedTestCase, BaseCoreModelTestMixin):
     """BaseModelの全機能を一括検証する"""
 
     def test_everything(self):
@@ -125,39 +125,3 @@ class BaseModelComprehensiveTest(SchemaManagedTestCase, BaseCoreModelTest):
 
 
 
-# class PatternAModelTest(BaseCoreModelTest):
-#     """PatternA: title 優先表示の検証"""
-#     factory_class = PatternAFactory
-
-# class PatternBModelTest(BaseCoreModelTest):
-#     """PatternB: name 表示の検証"""
-#     factory_class = PatternBFactory
-
-# class PatternCModelTest(BaseCoreModelTest):
-#     """PatternC: クラス名表示の検証"""
-#     factory_class = PatternCFactory
-
-# class UniqueRenameModelTest(BaseCoreModelTest):
-#     """UniqueRename: リネームと複数フィールドの検証"""
-#     factory_class = UniqueRenameFactory
-#     # リネーム対象のフィールドリスト
-#     unique_fields = ['code', 'slug']
-#     # 再登録検証用のデータ
-#     unique_test_data = {
-#         'code': 'UNIQUE-001',
-#         'slug': 'unique-slug-001'
-#     }
-
-#     def test_multi_field_rename_simultaneously(self):
-#         """code と slug が同時にリネームされることを追加検証"""
-#         obj = self.factory_class.create(code="target-code", slug="target-slug")
-#         obj.delete()
-#         obj.refresh_from_db()
-
-#         with self.subTest(field="code"):
-#             self.assertIn("_del_", obj.code)
-#             self.assertTrue(obj.code.startswith("target-code"))
-        
-#         with self.subTest(field="slug"):
-#             self.assertIn("_del_", obj.slug)
-#             self.assertTrue(obj.slug.startswith("target-slug"))

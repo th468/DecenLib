@@ -3,8 +3,9 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from ..models import Biblio, Book, Shelf, Floor
 from ..factories import BiblioFactory, BookFactory, ShelfFactory, FloorFactory
+from core.tests.test_mixins import BaseCoreModelTest
 
-class BiblioModelTest(TestCase):
+class BiblioModelTest(TestCase, BaseCoreModelTest):
     """
     Biblioモデルの定義と振る舞いをテストする
     """

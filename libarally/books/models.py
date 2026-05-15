@@ -1,13 +1,14 @@
 from django.db import models, transaction
 from django.urls import reverse
 from core.models.base import BaseModel
+from core.models.mixins import RenameUniqueFieldsMixin
 
 
 """
     蔵書（実体）モデル
     1つの書誌(Biblio)に対して、複数の実体(Book)が紐付く。
     """
-class Book(BaseModel):
+class Book(BaseModel,RenameUniqueFieldsMixin):
     #書籍の状況を表すための定数
     class Status(models.IntegerChoices):
         AVAILABLE = 1, "在庫あり"
@@ -76,10 +77,10 @@ class Book(BaseModel):
 
 #書誌情報のモデル
 class Biblio(BaseModel):
-    isbn = models.CharField(max_length=255, primary_key= True)
-    title = models.CharField(max_length=255)
-    author = models.CharField(max_length=255)
-    publisher = models.CharField(max_length=255)
+    isbn = models.CharField(max_length=255, unique=True, verbose_name="ISBN")
+    title = models.CharField(max_length=255, verbose_name="タイトル")
+    author = models.CharField(max_length=255, verbose_name="著者")
+    publisher = models.CharField(max_length=255, verbose_name="出版社")
     def __str__(self):
         return self.title
     def get_absolute_url(self):
@@ -93,8 +94,6 @@ class Biblio(BaseModel):
 class Shelf(BaseModel):
     name = models.CharField(max_length=255)
     floor = models.ForeignKey("Floor", on_delete=models.PROTECT, related_name="shelf")
-    def __str__(self):
-        return self.name
 
     class Meta:
         verbose_name_plural = "本棚情報"
@@ -102,8 +101,6 @@ class Shelf(BaseModel):
 #階情報のモデル
 class Floor(BaseModel):
     name = models.CharField(max_length=255)
-    def __str__(self):
-        return self.name
 
     class Meta:
         verbose_name_plural = "階情報"

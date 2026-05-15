@@ -1,4 +1,5 @@
 from django.db import models
+from .mixins import RenameUniqueFieldsMixin
 
 class BaseQuerySet(models.QuerySet):
     """プロジェクト共通のクエリ操作"""
@@ -33,10 +34,10 @@ class BaseModel(models.Model):
     updated_at = models.DateTimeField("更新日時", auto_now=True)
     remarks = models.TextField("備考", null=True, blank=True)
 
-    delete_unique_fields = []
 
     objects = BaseManager()
     all_objects = BaseQuerySet.as_manager()
+
 
     class Meta:
         abstract = True
@@ -47,7 +48,6 @@ class BaseModel(models.Model):
         return f"[{self.pk}] {name}({self.__class__.__name__})" if name else f"[{self.pk}] ({self.__class__.__name__})"
     
     def delete(self, *args, **kwargs):
-        from .mixins import RenameUniqueFieldsMixin
         """個別の削除 (instance.delete()) を論理削除に書き換え"""
         self.is_active = False
 

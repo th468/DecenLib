@@ -129,7 +129,7 @@ class RenameUniqueTestMixin:
             self.fail(msg=f"{name}: 存在しないフィールドが delete_unique_fields に含まれるとエラーが発生します。 エラー: {e}")
 
 
-class BaseCoreModelTest(TestCase, BaseModelBehaviorMixin, RenameUniqueTestMixin):
+class BaseCoreModelTestMixin(BaseModelBehaviorMixin, RenameUniqueTestMixin):
     """
     全てのモデルテストの基底となるクラス。
     factory_class を定義するだけで、標準的な全テストを自動実行する。
