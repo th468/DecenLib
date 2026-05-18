@@ -1,0 +1,43 @@
+[tool.ruff]
+# 除外するディレクトリ
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "migrations",
+]
+
+# 1行の最大文字数
+line-length = 119
+
+[tool.ruff.lint]
+# 有効にするルール
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (インポート順序)
+    "B",   # flake8-bugbear (バグの芽)
+    "C90", # mccabe (複雑度)
+]
+ignore = []
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.mypy]
+# Djangoプラグインを有効化
+plugins = ["mypy_django_plugin.main"]
+
+# 型ヒントがない関数もチェック対象にする
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+# インポート先の型情報がない場合のエラーを無視
+ignore_missing_imports = true
+
+# 厳格なモード（必要に応じて調整）
+strict_optional = true
+
+[tool.django-stubs]
+django_settings_module = "libarally.settings"
