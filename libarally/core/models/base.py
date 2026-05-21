@@ -45,9 +45,11 @@ class BaseModel(models.Model):
         abstract = True
 
     def __str__(self):
-        # 名前かタイトルがあればそれを表示、なければIDを表示
-        name = getattr(self, 'title', getattr(self, 'name', ''))
-        return f"[{self.pk}] {name}({self.__class__.__name__})" if name else f"[{self.pk}] ({self.__class__.__name__})"
+        # 名前かタイトルがあればそれを表示、なければIDを表示（通常はIDを隠蔽する設計）
+        name = getattr(self, "title", getattr(self, "name", ""))
+        if name:
+            return f"{name}({self.__class__.__name__})"
+        return f"ID:{self.pk}({self.__class__.__name__})"
 
     def delete(self, *args, **kwargs):
         """個別の削除 (instance.delete()) を論理削除に書き換え"""

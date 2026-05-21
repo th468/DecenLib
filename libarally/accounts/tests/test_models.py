@@ -3,6 +3,7 @@ from unittest.mock import PropertyMock, patch
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from core.tests.test_mixins import BaseModelTestMixin
 from ..factories import DepartmentFactory, UserFactory
 from ..models import Department, User
 
@@ -11,16 +12,13 @@ class UserManagerTest(TestCase):
     """
     UserManagerの生成ロジックそのものをテストするクラス
     """
+
     def test_create_user_success(self):
         """create_user で正常に作成され、パスワードが暗号化されているか"""
         email = "test@example.com"
         em_num = "EM001"
         password = "password123"
-        user = User.objects.create_user(
-            email=email,
-            em_num=em_num,
-            password=password
-        )
+        user = User.objects.create_user(email=email, em_num=em_num, password=password)
         self.assertEqual(user.email, email)
         self.assertEqual(user.em_num, em_num)
         self.assertTrue(user.check_password(password))
@@ -29,11 +27,7 @@ class UserManagerTest(TestCase):
 
     def test_create_superuser_success(self):
         """create_superuser で適切な権限フラグが立っているか"""
-        user = User.objects.create_superuser(
-            email="admin@example.com",
-            em_num="ADMIN01",
-            password="adminpassword"
-        )
+        user = User.objects.create_superuser(email="admin@example.com", em_num="ADMIN01", password="adminpassword")
         self.assertTrue(user.is_staff)
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_active)
@@ -51,6 +45,7 @@ class UserModelTest(TestCase):
     """
     Userモデルの定義と振る舞いをテストするクラス
     """
+
     # --- ① 共通テスト項目 ---
 
     def test_create_success(self):
@@ -71,8 +66,8 @@ class UserModelTest(TestCase):
         user.em_num = ""
         with self.assertRaises(ValidationError) as cm:
             user.full_clean()
-        self.assertIn('email', cm.exception.message_dict)
-        self.assertIn('em_num', cm.exception.message_dict)
+        self.assertIn("email", cm.exception.message_dict)
+        self.assertIn("em_num", cm.exception.message_dict)
 
     def test_unique_constraint(self):
         """unique=True の項目が重複した際、full_clean() で ValidationError が出るか"""
@@ -80,8 +75,8 @@ class UserModelTest(TestCase):
         duplicate_user = UserFactory.build(email="dup@example.com", em_num="DUP001")
         with self.assertRaises(ValidationError) as cm:
             duplicate_user.full_clean()
-        self.assertIn('email', cm.exception.message_dict)
-        self.assertIn('em_num', cm.exception.message_dict)
+        self.assertIn("email", cm.exception.message_dict)
+        self.assertIn("em_num", cm.exception.message_dict)
 
     def test_max_length_constraint(self):
         """max_length を超える文字列を代入し full_clean() でエラーが出るか"""
@@ -90,8 +85,8 @@ class UserModelTest(TestCase):
         user.email = ("a" * 250) + "@example.com"  # 255超
         with self.assertRaises(ValidationError) as cm:
             user.full_clean()
-        self.assertIn('em_num', cm.exception.message_dict)
-        self.assertIn('email', cm.exception.message_dict)
+        self.assertIn("em_num", cm.exception.message_dict)
+        self.assertIn("email", cm.exception.message_dict)
 
     # --- ② 個別テスト項目 (can_lend) ---
 
@@ -99,7 +94,7 @@ class UserModelTest(TestCase):
         """正常系: 貸出中件数が上限未満ならTrueを返す"""
         user = UserFactory(lending_limit=5)
         # active_lending_count プロパティを Mock 化
-        with patch('accounts.models.User.active_lending_count', new_callable=PropertyMock) as mock_count:
+        with patch("accounts.models.User.active_lending_count", new_callable=PropertyMock) as mock_count:
             mock_count.return_value = 0
             self.assertTrue(user.can_lend)
 
@@ -109,31 +104,31 @@ class UserModelTest(TestCase):
     def test_can_lend_abnormal(self):
         """異常系: 貸出中件数が上限を超えている（想定外だがロジック上）場合はFalseを返す"""
         user = UserFactory(lending_limit=5)
-        with patch('accounts.models.User.active_lending_count', new_callable=PropertyMock) as mock_count:
+        with patch("accounts.models.User.active_lending_count", new_callable=PropertyMock) as mock_count:
             mock_count.return_value = 6
             self.assertFalse(user.can_lend)
 
     def test_can_lend_boundary(self):
         """境界値: 貸出中件数が上限と一致する場合、Falseを返す"""
         user = UserFactory(lending_limit=5)
-        with patch('accounts.models.User.active_lending_count', new_callable=PropertyMock) as mock_count:
+        with patch("accounts.models.User.active_lending_count", new_callable=PropertyMock) as mock_count:
             mock_count.return_value = 5
             self.assertFalse(user.can_lend)
 
+    def test_base_model_fields(self):
+        """Userモデルに個別追加した管理用フィールドが正しく動作するか"""
+        user = UserFactory()
+        self.assertIsNotNone(user.created_at)
+        self.assertIsNotNone(user.updated_at)
+        self.assertTrue(user.is_active)  # Userは標準のis_activeを使用
 
-class DepartmentModelTest(TestCase):
+
+class DepartmentModelTest(TestCase, BaseModelTestMixin):
     """
     Departmentモデルの定義と振る舞いをテストするクラス
     """
-    def test_create_success(self):
-        """Factoryでエラーなくインスタンスが作成・保存できるか"""
-        dept = DepartmentFactory()
-        self.assertIsInstance(dept, Department)
 
-    def test_str_representation(self):
-        """__str__ が期待通りの値を返すか"""
-        dept = DepartmentFactory(name="開発部")
-        self.assertEqual(str(dept), "開発部")
+    factory_class = DepartmentFactory
 
     def test_required_fields(self):
         """必須項目を空にして full_clean() を呼んだ際、ValidationError が出るか"""
@@ -148,3 +143,4 @@ class DepartmentModelTest(TestCase):
         dept.name = "a" * 256
         with self.assertRaises(ValidationError):
             dept.full_clean()
+

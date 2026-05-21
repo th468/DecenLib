@@ -146,4 +146,8 @@ MESSAGE_TAGS = {
 # 予約の取置期間（日）
 RESERVATION_PERIOD_DAYS = 7
 
+# Media files (Uploaded files)
+MEDIA_URL = "media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 

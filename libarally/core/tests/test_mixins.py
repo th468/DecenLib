@@ -129,7 +129,7 @@ class RenameUniqueTestMixin:
             self.fail(msg=f"{name}: 存在しないフィールドが delete_unique_fields に含まれるとエラーが発生します。 エラー: {e}")
 
 
-class BaseCoreModelTestMixin(BaseModelBehaviorMixin, RenameUniqueTestMixin):
+class BaseModelTestMixin(BaseModelBehaviorMixin, RenameUniqueTestMixin):
     """
     全てのモデルテストの基底となるクラス。
     factory_class を定義するだけで、標準的な全テストを自動実行する。
@@ -184,24 +184,27 @@ class BaseCoreModelTestMixin(BaseModelBehaviorMixin, RenameUniqueTestMixin):
         f = self.factory_class
         model, name = self._get_meta(f)
 
-        # 動的な引数生成で TypeError を回避
+        # 1. 名前がある場合のテスト
         create_kwargs = {}
         expected_part = ""
-
-        if hasattr(model, 'title'):
-            create_kwargs['title'] = "TestTitle"
+        if hasattr(model, "title"):
+            create_kwargs["title"] = "TestTitle"
             expected_part = "TestTitle"
-        elif hasattr(model, 'name'):
-            create_kwargs['name'] = "TestName"
+        elif hasattr(model, "name"):
+            create_kwargs["name"] = "TestName"
             expected_part = "TestName"
 
-        obj = f.create(**create_kwargs)
-        display_str = str(obj)
-
-        # IDが含まれているか
-        self.assertIn(str(obj.pk), display_str, msg=f"{name}: __str__ に PK が含まれていません。")
-        # 名前/タイトルまたはクラス名が含まれているか
         if expected_part:
+            obj = f.create(**create_kwargs)
+            display_str = str(obj)
             self.assertIn(expected_part, display_str, msg=f"{name}: __str__ に期待される文字列({expected_part})が含まれていません。")
-        else:
-            self.assertIn(name, display_str, msg=f"{name}: __str__ にクラス名が含まれていません。")
+
+        # 2. 名前がない場合のテスト（PK の表示を要求）
+        # 名前/タイトルフィールドを空にして作成
+        empty_kwargs = {
+            k: ""
+            for k in (["title"] if hasattr(model, "title") else []) + (["name"] if hasattr(model, "name") else [])
+        }
+        obj_no_name = f.create(**empty_kwargs)
+        display_str_no_name = str(obj_no_name)
+        self.assertIn(str(obj_no_name.pk), display_str_no_name, msg=f"{name}: 名前がない場合の __str__ に PK が含まれていません。")
