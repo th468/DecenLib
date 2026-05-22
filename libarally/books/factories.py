@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from .models import Biblio, Book, Floor, Shelf
+from .models import Biblio, Book, Category, Floor, Shelf
 
 
 class FloorFactory(DjangoModelFactory):
@@ -17,6 +17,13 @@ class ShelfFactory(DjangoModelFactory):
 
     name = factory.Sequence(lambda n: f"棚-{n:03d}")
     floor = factory.SubFactory(FloorFactory)
+
+
+class CategoryFactory(DjangoModelFactory):
+    class Meta:
+        model = Category
+
+    name = factory.Sequence(lambda n: f"カテゴリ-{n:02d}")
 
 
 class BiblioFactory(DjangoModelFactory):

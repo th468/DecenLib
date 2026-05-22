@@ -3,23 +3,51 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 
-from ..factories import BiblioFactory, BookFactory, FloorFactory, ShelfFactory
-from ..models import Book
+from ..factories import (
+    BiblioFactory,
+    BookFactory,
+    CategoryFactory,
+    FloorFactory,
+    ShelfFactory,
+)
+
+
+class CategoryModelTest(TestCase, BaseModelTestMixin):
+    """
+    Categoryモデルのテスト
+    """
+
+    factory_class = CategoryFactory
 
 
 class BiblioModelTest(TestCase, BaseModelTestMixin):
     """
-    Biblioモデルの定義と振る舞いをテストする
+    Biblioモデルの定義とリレーションをテストする
     """
 
     factory_class = BiblioFactory
 
     def run_str_test(self):
-        """__str__ の独自形式（【書誌】）を検証"""
+        """__str__ の独自形式を検証"""
         biblio = BiblioFactory(title="テスト本")
-        display_str = str(biblio)
-        self.assertIn("【書誌】", display_str)
-        self.assertIn("テスト本", display_str)
+        self.assertIn("【書誌】", str(biblio))
+        self.assertIn("テスト本", str(biblio))
+
+    def test_category_relation(self):
+        """正常系: 多対多リレーションの動作確認"""
+        biblio = BiblioFactory()
+        cat1 = CategoryFactory(name="技術書")
+        cat2 = CategoryFactory(name="Python")
+
+        # 1. カテゴリを2つ追加
+        biblio.categories.add(cat1, cat2)
+
+        # 2. 正しく紐付いているか確認
+        self.assertEqual(biblio.categories.count(), 2)
+        self.assertIn(cat1, biblio.categories.all())
+
+        # 3. 逆方向（カテゴリ側）からも本を参照できるか確認
+        self.assertIn(biblio, cat1.biblios.all())
 
     def test_required_fields(self):
         """各必須項目を空にして full_clean() を呼んだ際、ValidationError が出るか"""
@@ -55,7 +83,7 @@ class BookModelTest(TestCase, BaseModelTestMixin):
     factory_class = BookFactory
 
     def run_str_test(self):
-        """__str__ の独自形式（【現物】）を検証"""
+        """__str__ の独自形式を検証"""
         biblio = BiblioFactory(title="Python入門")
         book = BookFactory(biblio=biblio)
         display_str = str(book)
@@ -89,16 +117,19 @@ class BookModelTest(TestCase, BaseModelTestMixin):
     # ② 個別テスト項目
     def test_can_be_lent_logic(self):
         """正常系 → 異常系: statusに応じたcan_be_lentの挙動テスト"""
+        # モデルクラスをFactoryから取得
+        model_class = self.factory_class._meta.model
+
         # 正常系: 在庫あり
-        book_available = BookFactory(status=Book.Status.AVAILABLE)
+        book_available = BookFactory(status=model_class.Status.AVAILABLE)
         self.assertTrue(book_available.can_be_lent)
 
         # 異常系: 貸出中
-        book_lent = BookFactory(status=Book.Status.LENT)
+        book_lent = BookFactory(status=model_class.Status.LENT)
         self.assertFalse(book_lent.can_be_lent)
 
         # 異常系: メンテナンス中
-        book_maint = BookFactory(status=Book.Status.MAINTENANCE)
+        book_maint = BookFactory(status=model_class.Status.MAINTENANCE)
         self.assertFalse(book_maint.can_be_lent)
 
     def test_save_auto_increment_count(self):
