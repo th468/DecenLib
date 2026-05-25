@@ -1,0 +1,10 @@
+<form action="{% url 'books:booklist' %}" method="get" class="d-flex mx-lg-4 my-2 my-lg-0 flex-grow-1" style="max-width: 500px;">
+    <div class="input-group">
+        <input type="text" name="q" value="{{ q }}" 
+               class="form-control border-secondary-subtle" 
+               placeholder="15,000冊から探す..." aria-label="Search">
+        <button class="btn btn-light border-secondary-subtle" type="submit">
+            <i class="bi bi-search text-primary"></i> 検索
+        </button>
+    </div>
+</form>

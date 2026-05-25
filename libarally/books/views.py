@@ -1,4 +1,5 @@
 from core.views.mixins import PageTitleMixin, SearchMixin, StaffManagerMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -61,11 +62,22 @@ class BookListView(PageTitleMixin, SearchMixin, ListView):
 
 
 # #詳細画面
-class BookDetailView(PageTitleMixin, DetailView):
+class BookDetailView(LoginRequiredMixin, PageTitleMixin, DetailView):
     model = Book
     template_name = "books/book_detail.html"
     context_object_name = "book"
     page_title = "蔵書詳細"
+
+    def get_queryset(self):
+        """
+        書誌情報、カテゴリ、所在（棚・階）を一括で取得してクエリを最適化
+        """
+        return (
+            super()
+            .get_queryset()
+            .select_related("biblio", "shelf", "shelf__floor")
+            .prefetch_related("biblio__categories")
+        )
 
 
 # 管理インデックス

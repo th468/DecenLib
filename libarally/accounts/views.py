@@ -34,16 +34,12 @@ def login_view(request):
             if next_url:
                 redirect_url = next_url
             else:
-                redirect_url = "accounts:index"
+                redirect_url = "dashboard:index"
             return redirect(redirect_url)
         else:
             login_form.add_error(None, "ログインに失敗しました")
 
     return render(request, "accounts/login.html", context={"form": login_form, "next_url": next_url})
-
-
-def index(request):
-    return render(request, "accounts/index.html")
 
 
 @login_required

@@ -1,18 +1,24 @@
 from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
 from books.models import Biblio
 
-class DashboardIndexView(LoginRequiredMixin, TemplateView):
+class DashboardIndexView(TemplateView):
     """
-    ユーザー専用ダッシュボード
+    サイトトップ / ダッシュボード
+    ログイン状況に応じて「紹介ページ」と「ユーザー専用ダッシュボード」を出し分ける。
     """
-    template_name = "dashboard/index.html"
+    
+    def get_template_names(self):
+        # ログイン状態によって使用するテンプレートを動的に切り替え
+        if self.request.user.is_authenticated:
+            return ["dashboard/index.html"]
+        return ["dashboard/landing.html"]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # ユーザー固有の情報は User モデルのプロパティ（user.active_lendings 等）をテンプレートで使用。
-        # ここではユーザー共通の情報（新着本など）のみを取得
-        context['recent_biblios'] = Biblio.objects.all().order_by('-created_at')[:5]
+        # ログイン済みの場合のみ、ダッシュボード用のデータを取得
+        if self.request.user.is_authenticated:
+            # ユーザー共通の情報（新着本など）を取得
+            context['recent_biblios'] = Biblio.objects.all().order_by('-created_at')[:5]
         
         return context
