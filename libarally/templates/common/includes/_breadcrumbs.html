@@ -1,0 +1,17 @@
+{# パンくずリスト・コンポーネント #}
+{# 引数: links (List of dicts with 'label' and 'url') #}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-decoration-none text-muted">ホーム</a></li>
+        {% for link in links %}
+            {% if forloop.last %}
+                <li class="breadcrumb-item active fw-bold text-dark" aria-current="page">{{ link.label }}</li>
+            {% else %}
+                <li class="breadcrumb-item">
+                    <a href="{{ link.url }}" class="text-decoration-none text-muted">{{ link.label }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>

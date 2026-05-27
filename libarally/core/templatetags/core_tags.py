@@ -44,6 +44,58 @@ def active_link(context, url_name, css_class='active'):
     
     return ""
 
+@register.inclusion_tag('common/includes/_breadcrumbs.html', takes_context=True)
+def render_breadcrumbs(context):
+    """
+    URL パスを解析してパンくずリストを自動生成する。
+    """
+    request = context.get('request')
+    if not request or request.path == '/':
+        return {'links': []}
+
+    path = request.path.strip('/')
+    segments = path.split('/')
+    
+    # URL セグメントと日本語ラベルのマッピング
+    label_map = {
+        'books': '蔵書をさがす',
+        'list': '検索結果',
+        'detail': '書籍詳細',
+        'dashboard': 'マイページ',
+        'accounts': 'ユーザー',
+        'login': 'ログイン',
+        'regist': '新規登録',
+        'manage': '管理メニュー',
+        'info': 'ユーザー情報',
+    }
+
+    breadcrumbs = []
+    current_url = '/'
+    
+    for i, segment in enumerate(segments):
+        if not segment:
+            continue
+            
+        current_url += f"{segment}/"
+        
+        # ID（数字）の場合は「詳細」などのラベルにする
+        if segment.isdigit():
+            # 1つ前のセグメントを見てラベルを調整
+            prev = segments[i-1] if i > 0 else ""
+            if prev == 'detail':
+                label = '詳細'
+            elif prev == 'update':
+                label = '編集'
+            else:
+                label = f'#{segment}'
+        else:
+            label = label_map.get(segment, segment.capitalize())
+
+        breadcrumbs.append({'label': label, 'url': current_url})
+
+    return {'links': breadcrumbs}
+
+
 @register.simple_tag
 def relative_url(value, field_name, urlencode=None):
     """

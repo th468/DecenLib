@@ -1,0 +1,33 @@
+{% load core_tags %}
+{# ページネーション・コンポーネント #}
+{# 引数: page_obj (Django Page object), request (HttpRequest) #}
+
+{% if page_obj.has_other_pages %}
+<nav class="mt-5">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link shadow-sm rounded-start-pill" href="{% relative_url page_obj.previous_page_number 'page' request.GET.urlencode %}">
+                <i class="bi bi-chevron-left"></i> 前へ
+            </a>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active shadow-sm"><span class="page-link px-3">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item shadow-sm"><a class="page-link px-3" href="{% relative_url num 'page' request.GET.urlencode %}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link shadow-sm rounded-end-pill" href="{% relative_url page_obj.next_page_number 'page' request.GET.urlencode %}">
+                次へ <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

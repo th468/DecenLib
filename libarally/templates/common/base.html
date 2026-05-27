@@ -1,4 +1,4 @@
-{% load static %}
+{% load static core_tags %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -24,6 +24,13 @@
     <header>
         {# ヘッダーコンポーネント #}
         {% include "common/includes/_header.html" %}
+
+        {# 自動パンくずリスト・エリア #}
+        <div class="bg-light border-bottom py-1 mb-3">
+            <div class="container">
+                {% render_breadcrumbs %}
+            </div>
+        </div>
     </header>
 
     <main class="flex-grow-1">
