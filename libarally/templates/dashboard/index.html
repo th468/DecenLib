@@ -1,4 +1,5 @@
 {% extends "common/base.html" %}
+{% load core_tags %}
 
 {% block title %}ダッシュボード | Libarally{% endblock %}
 
@@ -30,7 +31,11 @@
                                     {% if lending.is_overdue %}(延滞中){% endif %}
                                 </small>
                             </div>
-                            <a href="{% url 'books:bookdetail' lending.book.biblio.pk %}" class="btn btn-sm btn-outline-primary ms-3">詳細</a>
+                            <div class="d-flex gap-2 align-items-center">
+                                {# アクションボタンコンポーネントを適用 #}
+                                {% include "common/includes/_action_buttons.html" with book=lending.book user=user %}
+                                <a href="{% url 'books:bookdetail' lending.book.biblio.pk %}" class="btn btn-sm btn-outline-primary px-3 rounded-pill">詳細</a>
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
@@ -56,10 +61,14 @@
                     {% for res in user.active_reservations %}
                     <li class="list-group-item px-0 py-2">
                         <div class="d-flex justify-content-between align-items-start">
-                            <span class="small text-truncate me-2" style="max-width: 70%;">{{ res.biblio.title }}</span>
-                            <span class="badge {% if res.status == 2 %}bg-success{% else %}bg-secondary{% endif %}">
-                                {{ res.get_status_display }}
-                            </span>
+                            <span class="small text-truncate me-2" style="max-width: 60%;">{{ res.biblio.title }}</span>
+                            <div class="text-end">
+                                <span class="badge {% if res.status == 2 %}bg-success{% else %}bg-secondary{% endif %} mb-1">
+                                    {{ res.get_status_display }}
+                                </span>
+                                <br>
+                                <a href="{% url 'books:bookdetail' res.biblio.pk %}" class="x-small text-decoration-none">詳細へ</a>
+                            </div>
                         </div>
                     </li>
                     {% endfor %}
@@ -74,7 +83,7 @@
     </div>
 </div>
 
-<!-- 3. 貸出履歴エリア（ユーザー固有の情報を優先） -->
+<!-- 3. 貸出履歴エリア -->
 <div class="row mt-5">
     <div class="col-12">
         <h3 class="h5 mb-4 text-primary">最近読んだ本（履歴）</h3>
@@ -88,6 +97,7 @@
                                 <th class="ps-4">返却日</th>
                                 <th>タイトル</th>
                                 <th>著者</th>
+                                <th class="text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -96,6 +106,9 @@
                                 <td class="ps-4 small text-muted">{{ history.return_date|date:"Y/m/d" }}</td>
                                 <td class="fw-bold text-dark">{{ history.book.biblio.title }}</td>
                                 <td class="small">{{ history.book.biblio.author }}</td>
+                                <td class="text-center">
+                                    <a href="{% url 'books:bookdetail' history.book.biblio.pk %}" class="btn btn-sm btn-link text-decoration-none">もう一度借りる</a>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -109,7 +122,7 @@
     </div>
 </div>
 
-<!-- 4. 新着本エリア -->
+<!-- 4. 新着本エリア (コンポーネント適用) -->
 <div class="row mt-5">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -119,21 +132,7 @@
     </div>
     <div class="row row-cols-2 row-cols-md-5 g-4">
         {% for biblio in recent_biblios %}
-        <div class="col">
-            <div class="card h-100 text-center border-0 shadow-sm transition-hover">
-                <div class="p-3">
-                    {% if biblio.cover %}
-                    <img src="{{ biblio.cover.url }}" class="img-fluid rounded mb-3" style="max-height: 150px; object-fit: contain;" alt="{{ biblio.title }}">
-                    {% else %}
-                    <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3" style="height: 150px;">
-                        <span class="text-muted small">NO IMAGE</span>
-                    </div>
-                    {% endif %}
-                    <h4 class="small fw-bold text-truncate mb-1">{{ biblio.title }}</h4>
-                    <p class="x-small text-muted mb-0">{{ biblio.author }}</p>
-                </div>
-            </div>
-        </div>
+            {% include "common/includes/_biblio_card.html" with item=biblio user=user %}
         {% endfor %}
     </div>
 </div>

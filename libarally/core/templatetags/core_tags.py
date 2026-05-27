@@ -57,3 +57,51 @@ def relative_url(value, field_name, urlencode=None):
         if encoded_querystring:
             url = f'{url}&{encoded_querystring}'
     return url
+
+
+# --- 状態判定フィルタ ---
+
+@register.filter
+def is_lent_by(obj, user):
+    """
+    ユーザーが対象を現在借りているか判定。
+    obj が Biblio の場合は「そのタイトルのいずれか」を、
+    obj が Book の場合は「その個体」を借りているか判定。
+    """
+    if not user or not user.is_authenticated:
+        return False
+    from books.models import Biblio, Book
+    from transactions.models import Lending
+
+    if isinstance(obj, Biblio):
+        return Lending.objects.ongoing().filter(book__biblio=obj, user=user).exists()
+    elif isinstance(obj, Book):
+        return Lending.objects.ongoing().filter(book=obj, user=user).exists()
+    return False
+
+
+@register.filter
+def is_reserved_by(biblio, user):
+    """ユーザーがその書誌を現在予約しているか判定"""
+    if not user or not user.is_authenticated:
+        return False
+    from transactions.models import Reservation
+    return Reservation.objects.ongoing().filter(biblio=biblio, user=user).exists()
+
+
+@register.filter
+def is_lent_by_others(biblio, user):
+    """自分以外のユーザーがその書誌（のいずれかの在庫）を現在借りているか判定"""
+    if not user or not user.is_authenticated:
+        return False
+    from transactions.models import Lending
+    return Lending.objects.ongoing().filter(book__biblio=biblio).exclude(user=user).exists()
+
+
+@register.filter
+def user_lending(biblio, user):
+    """ユーザーがその書誌を借りている場合、その Lending オブジェクトを返す"""
+    if not user or not user.is_authenticated:
+        return None
+    from transactions.models import Lending
+    return Lending.objects.ongoing().filter(book__biblio=biblio, user=user).first()

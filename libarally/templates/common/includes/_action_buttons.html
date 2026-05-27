@@ -1,0 +1,26 @@
+{% load core_tags %}
+{# 在庫（Book）アクションボタン・コンポーネント #}
+{# 引数: book (Book), user (User) #}
+
+<div class="d-flex justify-content-center">
+    {% if book|is_lent_by:user %}
+        <!-- 自身が借りている場合：返却ボタン -->
+        <form action="{% url 'transactions:collect' book.pk %}" method="post" onsubmit="return confirm('この本を返却しますか？');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-sm rounded-pill px-4">
+                <i class="bi bi-arrow-return-left"></i> 返却
+            </button>
+        </form>
+    {% elif book.can_be_lent %}
+        <!-- 貸出可能な場合：今すぐ借りるボタン -->
+        <form action="{% url 'transactions:lend' book.pk %}" method="post" onsubmit="return confirm('この本を借りますか？\n※すぐに受け取りに行く必要があります。');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
+                今すぐ借りる
+            </button>
+        </form>
+    {% else %}
+        <!-- 貸出中の場合はここではアクションなし（予約セクションへ誘導） -->
+        <span class="text-muted small">貸出中</span>
+    {% endif %}
+</div>
