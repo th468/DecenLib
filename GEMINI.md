@@ -23,11 +23,14 @@
 ### Models & Logic
 - **BaseModel Inheritance:** All models **MUST** inherit from `core.models.BaseModel` for standardized logical deletion via `is_active`.
 - **Logic Placement:** Prioritize 1. Model (Fat Model) > 2. Form > 3. Service. **DO NOT** implement business logic in Views (Thin View).
+- **Data Reset:** In maintenance scripts (e.g., seed data), use `all_objects.hard_delete()` for physical removal of records. Standard `.delete()` only marks them as inactive, which causes `IntegrityError` on re-entry of unique fields.
+- **Type Safety:** Always import `timedelta` from `datetime`. When accessing `request.user` in Views, use explicit `is_authenticated` checks even if `LoginRequiredMixin` is present to ensure type safety for mypy.
 - **Views:** Prioritize Class-Based Views (CBV).
 - **Naming:** STRICT PEP8 compliance (Class: PascalCase, Var/Func: snake_case).
 
 ### Testing
 - **Factories:** `factories.py` is **MANDATORY**. Use `BaseModelTestMixin` to strictly verify logical deletion and `__str__` formats.
+- **ManyToMany in Factories:** Use `@factory.post_generation` for models with `ManyToManyField` to allow seamless relation creation during data seeding.
 - **Coverage:** Include happy path, edge cases (max length, date chronology), and error handling.
 
 ### Templates
@@ -74,10 +77,13 @@
 #### モデルとロジック
 - **BaseModel継承:** 全モデルは `is_active` による論理削除を標準化するため `core.models.BaseModel` を継承しなければならない（MUST）。
 - **ロジック配置:** 1.Model (Fat Model) > 2.Form > 3.Service の順に優先。Viewにビジネスロジックを実装してはならない（DO NOT / Thin View）。
+- **データリセット:** Seed Dataなどのメンテナンススクリプトでは、レコードの物理削除に `all_objects.hard_delete()` を使用すること。標準の `.delete()` は論理削除を行うのみであり、ユニーク制約を持つフィールドの再投入時に `IntegrityError` を引き起こす原因となる。
+- **型安全性:** `timedelta` は常に `datetime` からインポートすること。Viewで `request.user` にアクセスする際は、mypyによる型安全性を確保するため、`LoginRequiredMixin` が存在する場合でも明示的に `is_authenticated` チェックを行うこと。
 - **命名:** PEP8に厳格に準拠（クラスは PascalCase、変数・関数は snake_case）。
 
 #### テスト
 - **Factory:** `factories.py` は必須（MANDATORY）。`BaseModelTestMixin` を使用して論理削除と `__str__` を厳密に検証すること。
+- **Factoryにおける多対多:** `ManyToManyField` を持つモデルには、Seed Data作成時にシームレスなリレーション構築を可能にするため、`@factory.post_generation` を使用すること。
 - **網羅性:** 正常系、境界値、エラーハンドリングを含めること。
 
 #### テンプレート
@@ -90,7 +96,7 @@
 
 ### 6. 主要コマンド
 - テスト: `python library/manage.py test library`
-- 品質: `ruff check .` / `mypy .`
+- Quality: `ruff check .` / `mypy .`
 - データベース: `python library/manage.py makemigrations` / `migrate`
 
 ### 7. セッション終了プロトコル

@@ -42,8 +42,13 @@ class LendingHistoryView(LoginRequiredMixin, PageTitleMixin, ListView):
 
     def get_queryset(self):
         # 自身の返却済み貸出履歴を新しい順に取得
+        user = self.request.user
+        if not user.is_authenticated:
+            # LoginRequiredMixinがあるため通常はここに来ないが、型安全性のためにガード
+            return Lending.objects.none()
+            
         return (
-            self.request.user.lending_set.returned()
+            user.lending_set.returned()
             .select_related("book__biblio")
             .order_by("-return_date")
         )

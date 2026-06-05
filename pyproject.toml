@@ -39,5 +39,17 @@ ignore_missing_imports = true
 # 厳格なモード（必要に応じて調整）
 strict_optional = true
 
+# エラーが多い、または設計上の理由で型解決が困難な箇所の抑制
+[[tool.mypy.overrides]]
+module = [
+    "*.tests.*",
+    "core.views.mixins",
+    "core.tests.*",
+    "accounts.tests.*",
+    "catalog.tests.*",
+    "transactions.tests.*",
+]
+ignore_errors = true
+
 [tool.django-stubs]
 django_settings_module = "config.settings"

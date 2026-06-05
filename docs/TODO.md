@@ -35,6 +35,14 @@
 - **背景**: 大規模リファクタリング時の整合性確保を優先し、現在は暫定的に `related_name="books"` を維持している。
 - **メリット**: マジックネームを排除し、Django の規約に忠実な透明性の高いコードベースを実現する。
 
+### 3.2. 型チェックの高度化 (mypy/django-stubsの完全適合)
+- **概要**: 現状抑制している Django 特有の動的な挙動や Mixin 構造に起因する型エラーを根本的に解決する。
+- **実装内容**:
+    - `django_stubs_ext.monkeypatch()` の導入による QuerySet/Manager のジェネリック化。
+    - Mixin クラスへの `typing.Protocol` または `TYPE_CHECKING` を用いた属性（`self.request` 等）の明示。
+    - Factory クラスの型定義改善（インスタンス属性と Factory クラス属性の混同解消）。
+    - `from_queryset` を使用した Manager の明示的な型指定への移行。
+
 ## 4. フロントエンド・UX最適化
 ### 4.1. お気に入り登録の非同期化 (Ajax / htmx)
 - **概要**: ページ全体のリロードを伴わず、ボタン部分のみを更新する非同期通信の実装。

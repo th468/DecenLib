@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from core.models.base import BaseManager, BaseModel, BaseQuerySet
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -27,7 +29,7 @@ class LendingQuerySet(BaseQuerySet):
 
     def expiring_soon(self, days=3):
         """期限が近い（days日以内）貸出データを返す"""
-        threshold = timezone.now().date() + timezone.timedelta(days=days)
+        threshold = timezone.now().date() + timedelta(days=days)
         return self.ongoing().filter(due_date__lte=threshold)
 
 
@@ -69,7 +71,7 @@ class LendingManager(BaseManager.from_queryset(LendingQuerySet)):
                     Reservation.objects.complete_reservation(res)
 
             # 貸出期限を計算
-            calculated_due_date = timezone.now().date() + timezone.timedelta(days=user.lending_period_days)
+            calculated_due_date = timezone.now().date() + timedelta(days=user.lending_period_days)
             # インスタンスの生成、バリデーション
             lending = self.model(
                 user=user,
@@ -111,7 +113,6 @@ class LendingManager(BaseManager.from_queryset(LendingQuerySet)):
 
             return lending
 
-
     # 貸出期間延長機能
     def renew(self, lending, user, days=14):
         with transaction.atomic():
@@ -135,7 +136,7 @@ class LendingManager(BaseManager.from_queryset(LendingQuerySet)):
             if has_waiting_reservation:
                 raise ValidationError("この本には次に予約が入っているため、延長できません。")
             # 期間の更新
-            lending.due_date += timezone.timedelta(days=days)
+            lending.due_date += timedelta(days=days)
             lending.save(update_fields=["due_date", "updated_at"])
 
             return lending
@@ -292,7 +293,6 @@ class ReservationManager(BaseManager.from_queryset(ReservationQuerySet)):
 
             return reservation
 
-
     def mark_as_ready(self, book):
         """
         指定された本を、待機中の最優先予約者に引き当てる。
@@ -320,7 +320,7 @@ class ReservationManager(BaseManager.from_queryset(ReservationQuerySet)):
             period_days = getattr(settings, "RESERVATION_PERIOD_DAYS", 7)
             target_res.status = 2  # READY
             target_res.book = target_book
-            target_res.reserved_until = timezone.now().date() + timezone.timedelta(days=period_days)
+            target_res.reserved_until = timezone.now().date() + timedelta(days=period_days)
             target_res.save(update_fields=["status", "book", "reserved_until", "updated_at"])
 
             return True
@@ -426,7 +426,10 @@ class Reservation(BaseModel):
         # 2. 重複予約のチェック（既に「待ち」または「準備完了」の予約があるか）
         if self.status == self.Status.WAITING:
             duplicate = (
-                self.__class__.objects.ongoing().filter(user=self.user, biblio=self.biblio).exclude(pk=self.pk).exists()
+                self.__class__.objects.ongoing()
+                .filter(user=self.user, biblio=self.biblio)
+                .exclude(pk=self.pk)
+                .exists()
             )
             if duplicate:
                 raise ValidationError("既にこの本に有効な予約が入っています。")

@@ -61,7 +61,7 @@ class BookViewsTest(TestCase):
         from catalog.factories import FavoriteFactory
 
         FavoriteFactory.create(user=self.user, biblio=self.biblio)
-        lending = LendingFactory.create(user=self.user, book=self.book)
+        LendingFactory.create(user=self.user, book=self.book)
 
         self.client.login(email="user@example.com", password="password123")
 

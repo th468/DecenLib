@@ -1,6 +1,7 @@
 from accounts.factories import UserFactory
 from catalog.factories import BiblioFactory, BookFactory
 from core.tests.test_mixins import BaseModelTestMixin
+from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
@@ -23,7 +24,7 @@ class LendingManagerTest(TestCase):
         """lend: 正常に貸出が作成され、書籍のステータスがLENTに変わるか"""
         lending = Lending.objects.lend(self.book, self.user)
         self.assertEqual(lending.status, Lending.Status.LENDING)
-        self.assertEqual(lending.due_date, timezone.now().date() + timezone.timedelta(days=14))
+        self.assertEqual(lending.due_date, timezone.now().date() + timedelta(days=14))
         self.book.refresh_from_db()
         self.assertEqual(self.book.status, 2)  # LENT
 
@@ -75,7 +76,7 @@ class LendingManagerTest(TestCase):
         lending = Lending.objects.lend(self.book, self.user)
         original_due = lending.due_date
         renewed = Lending.objects.renew(lending, self.user, days=7)
-        self.assertEqual(renewed.due_date, original_due + timezone.timedelta(days=7))
+        self.assertEqual(renewed.due_date, original_due + timedelta(days=7))
 
 
 class LendingModelTest(TestCase, BaseModelTestMixin):
@@ -98,10 +99,10 @@ class LendingModelTest(TestCase, BaseModelTestMixin):
             lending.full_clean()
 
     def test_is_overdue_property(self):
-        lending = LendingFactory(due_date=timezone.now().date() + timezone.timedelta(days=1))
+        lending = LendingFactory(due_date=timezone.now().date() + timedelta(days=1))
         self.assertFalse(lending.is_overdue)
 
-        lending.due_date = timezone.now().date() - timezone.timedelta(days=1)
+        lending.due_date = timezone.now().date() - timedelta(days=1)
         self.assertTrue(lending.is_overdue)
 
 
@@ -147,7 +148,7 @@ class ReservationManagerTest(TestCase):
         # 1. 期限切れの準備完了予約を作成
         book = BookFactory(biblio=self.biblio, status=1)
         res = Reservation.objects.create_reservation(self.user, self.biblio)
-        res.reserved_until = timezone.now().date() - timezone.timedelta(days=1)
+        res.reserved_until = timezone.now().date() - timedelta(days=1)
         res.save()
 
         # 2. 期限切れ処理を実行

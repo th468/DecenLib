@@ -1,4 +1,5 @@
 import factory
+from datetime import timedelta
 from django.utils import timezone
 from factory.django import DjangoModelFactory
 
@@ -14,7 +15,7 @@ class LendingFactory(DjangoModelFactory):
     book = factory.SubFactory("catalog.factories.BookFactory")
 
     # 14日後の返却期限をデフォルト設定
-    due_date = factory.LazyFunction(lambda: timezone.now().date() + timezone.timedelta(days=14))
+    due_date = factory.LazyFunction(lambda: timezone.now().date() + timedelta(days=14))
     status = Lending.Status.LENDING
     remarks = factory.Faker("word", locale="ja_JP")
 

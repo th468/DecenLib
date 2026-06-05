@@ -37,6 +37,15 @@ class BiblioFactory(DjangoModelFactory):
     author = factory.Faker("name", locale="ja_JP")
     publisher = factory.Faker("company", locale="ja_JP")
 
+    @factory.post_generation
+    def categories(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            for category in extracted:
+                self.categories.add(category)
+
 
 class BookFactory(DjangoModelFactory):
     class Meta:

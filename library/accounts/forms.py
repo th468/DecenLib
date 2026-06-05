@@ -17,6 +17,8 @@ class UserCreationForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if cleaned_data is None:
+            return None
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
         if password1 != password2:
@@ -25,7 +27,9 @@ class UserCreationForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data.get("password1"))
+        password = self.cleaned_data.get("password1") if self.cleaned_data else None
+        if password:
+            user.set_password(password)
         user.save()
         return user
 
