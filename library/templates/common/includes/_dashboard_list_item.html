@@ -1,0 +1,61 @@
+{% load core_tags %}
+{# ダッシュボード・リストアイテム・コンポーネント #}
+
+    {% comment %} 
+    object: Lending または Reservation オブジェクト
+    type: 'lending', 'reservation', 'history'
+    user: User オブジェクト 
+    {% endcomment %}
+
+
+<div class="list-group-item px-0 py-3 border-bottom bg-transparent">
+    <div class="d-flex justify-content-between align-items-center">
+        {# 左側：書籍情報とステータス #}
+        <div class="flex-grow-1 overflow-hidden me-3">
+            {% if type == 'lending' %}
+                <h4 class="h6 mb-1 text-dark text-truncate">{{ object.book.biblio.title }}</h4>
+                <div class="d-flex align-items-center gap-2">
+                    <small class="{% if object.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                        <i class="bi bi-clock-history"></i> 返却期限: {{ object.due_date|date:"Y/m/d" }}
+                        {% if object.is_overdue %}(延滞中){% endif %}
+                    </small>
+                </div>
+            {% elif type == 'reservation' %}
+                <h4 class="h6 mb-1 text-dark text-truncate">{{ object.biblio.title }}</h4>
+                <div class="d-flex align-items-center gap-2">
+                    <small class="text-muted"><i class="bi bi-calendar-event"></i> 予約日: {{ object.created_at|date:"Y/m/d" }}</small>
+                    <span class="badge extra-small {% if object.status == 2 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-secondary-subtle text-secondary border border-secondary-subtle{% endif %}">
+                        {{ object.get_status_display }}
+                    </span>
+                </div>
+            {% elif type == 'history' %}
+                <h4 class="h6 mb-1 text-dark text-truncate">{{ object.book.biblio.title }}</h4>
+                <div class="d-flex align-items-center flex-wrap gap-x-3 gap-y-1">
+                    <small class="text-muted"><i class="bi bi-person"></i> {{ object.book.biblio.author }}</small>
+                    <small class="text-muted"><i class="bi bi-calendar-check"></i> 返却日: {{ object.return_date|date:"Y/m/d" }}</small>
+                </div>
+            {% endif %}
+        </div>
+
+        {# 右側：アクションボタン #}
+        <div class="d-flex gap-2 align-items-center flex-shrink-0">
+            {% if type == 'lending' %}
+                {# 在庫に対するアクションボタン（返却/延長） #}
+                {% include "common/includes/_action_buttons.html" with book=object.book user=user %}
+                <a href="{% url 'catalog:bookdetail' object.book.biblio.pk %}" class="btn btn-sm btn-outline-primary px-3 rounded-pill">詳細</a>
+            {% elif type == 'reservation' %}
+                <form action="{% url 'transactions:reserve_cancel' object.pk %}" method="post" onsubmit="return confirm('予約を取り消しますか？');" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger px-3 rounded-pill">取消</button>
+                </form>
+                <a href="{% url 'catalog:bookdetail' object.biblio.pk %}" class="btn btn-sm btn-outline-primary px-3 rounded-pill">詳細</a>
+            {% elif type == 'history' %}
+                <a href="{% url 'catalog:bookdetail' object.book.biblio.pk %}" class="btn btn-sm btn-outline-primary px-4 rounded-pill">もう一度借りる</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .extra-small { font-size: 0.7rem; padding: 0.2em 0.6em; }
+</style>

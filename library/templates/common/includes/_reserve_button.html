@@ -1,0 +1,46 @@
+{% load static %}
+{# 予約ボタン・コンポーネント #}
+{% comment %} 
+    item: Biblio オブジェクト
+    user: User オブジェクト
+    user_reservation_ids: 予約中IDのセット
+    user_lending_ids: 貸出中IDのセット 
+{% endcomment %}
+
+
+{% if user.is_authenticated %}
+    <div class="d-inline-block">
+        {# 1. すでに自分が借りている場合 #}
+        {% if item.id in user_lending_ids %}
+            <button class="btn btn-secondary rounded-pill px-3 disabled" disabled>
+                <i class="bi bi-person-check"></i> 貸出中
+            </button>
+
+        {# 2. すでに予約済みの場合 #}
+        {% elif item.id in user_reservation_ids %}
+            {# 予約IDを特定してキャンセルボタンを表示 (Mixinで予約オブジェクトそのものを渡すか、フィルタ等でID取得が必要) #}
+            {# ここでは簡単のため、詳細画面へ誘導するか、特定のURLへ飛ばす設計とする #}
+            <a href="{% url 'dashboard:index' %}" class="btn btn-warning rounded-pill px-3 shadow-sm d-flex align-items-center gap-2">
+                <i class="bi bi-calendar-check-fill"></i> 予約済み
+            </a>
+
+        {# 3. 未予約の場合 #}
+        {% else %}
+            {# 在庫の有無でボタンの強調度を変える #}
+            <form action="{% url 'transactions:reserve' item.books.first.pk %}" method="post" class="d-inline">
+                {% csrf_token %}
+                {% if item.is_available %}
+                    {# 在庫あり：控えめなデザイン #}
+                    <button type="submit" class="btn btn-outline-info rounded-pill px-4 d-flex align-items-center gap-2" onclick="return confirm('在庫がありますが、予約（取り置き）しますか？');">
+                        <i class="bi bi-calendar-plus"></i> 予約する
+                    </button>
+                {% else %}
+                    {# 在庫なし：強調デザイン #}
+                    <button type="submit" class="btn btn-info text-white rounded-pill px-4 d-flex align-items-center gap-2 shadow-sm">
+                        <i class="bi bi-calendar-plus-fill"></i> この本を予約する
+                    </button>
+                {% endif %}
+            </form>
+        {% endif %}
+    </div>
+{% endif %}

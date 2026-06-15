@@ -38,18 +38,13 @@
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-start">
                 <h1 class="display-6 fw-bold text-dark mb-1">{{ biblio.title }}</h1>
-                {% if user.is_authenticated %}
-                <form action="{% url 'catalog:favorite_toggle' biblio.pk %}" method="post">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger rounded-pill px-3 d-flex align-items-center gap-2">
-                        {% if biblio.id in user_favorite_ids %}
-                            <i class="bi bi-heart-fill"></i> お気に入り解除
-                        {% else %}
-                            <i class="bi bi-heart"></i> お気に入り登録
-                        {% endif %}
-                    </button>
-                </form>
-                {% endif %}
+                <div class="d-flex gap-2">
+                    {# 予約ボタンコンポーネントを適用 #}
+                    {% include "common/includes/_reserve_button.html" with item=biblio user=user user_reservation_ids=user_reservation_ids user_lending_ids=user_lending_ids %}
+                    
+                    {# お気に入りボタンコンポーネントを適用 (ピルスタイル) #}
+                    {% include "common/includes/_favorite_button.html" with item=biblio user=user user_favorite_ids=user_favorite_ids style="pill" %}
+                </div>
             </div>
             {% if biblio.subtitle %}
             <p class="h5 text-muted fw-normal mb-3">{{ biblio.subtitle }}</p>

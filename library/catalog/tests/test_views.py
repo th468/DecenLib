@@ -84,3 +84,23 @@ class BookViewsTest(TestCase):
         self.assertEqual(response.context['user_favorite_ids'], set())
         self.assertEqual(response.context['user_lending_ids'], set())
         self.assertEqual(response.context['user_lent_book_ids'], set())
+
+    def test_favorite_toggle_re_enable_logic(self):
+        """お気に入りの登録・解除・再登録が正常に動作するか（論理削除の考慮）"""
+        from catalog.models import Favorite
+        self.client.login(email="user@example.com", password="password123")
+        url = reverse('catalog:favorite_toggle', kwargs={'pk': self.biblio.pk})
+
+        # 1. 登録
+        self.client.post(url)
+        self.assertTrue(Favorite.objects.filter(user=self.user, biblio=self.biblio, is_active=True).exists())
+
+        # 2. 解除 (論理削除)
+        self.client.post(url)
+        self.assertFalse(Favorite.objects.filter(user=self.user, biblio=self.biblio).exists())
+        self.assertTrue(Favorite.all_objects.filter(user=self.user, biblio=self.biblio, is_active=False).exists())
+
+        # 3. 再登録 (既存の inactive レコードを復帰させる必要がある)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Favorite.objects.filter(user=self.user, biblio=self.biblio, is_active=True).exists())

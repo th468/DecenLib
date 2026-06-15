@@ -56,13 +56,22 @@ class BiblioDetailView(LoginRequiredMixin, LibStatusMixin, PageTitleMixin, Detai
 class FavoriteToggleView(LoginRequiredMixin, View):
     def post(self, request, pk):
         biblio = get_object_or_404(Biblio, pk=pk)
-        favorite, created = Favorite.objects.get_or_create(user=request.user, biblio=biblio)
+        # 論理削除されたものも含めて全レコードから検索
+        favorite = Favorite.all_objects.filter(user=request.user, biblio=biblio).first()
 
-        if not created:
-            # 既にお気に入り登録されていた場合は解除
-            favorite.delete()
-            messages.info(request, f"「{biblio.title}」をお気に入りから解除しました。")
+        if favorite:
+            if favorite.is_active:
+                # 有効な場合は解除（論理削除）
+                favorite.delete()
+                messages.info(request, f"「{biblio.title}」をお気に入りから解除しました。")
+            else:
+                # 無効な場合は再有効化
+                favorite.is_active = True
+                favorite.save()
+                messages.success(request, f"「{biblio.title}」をお気に入りに登録しました！")
         else:
+            # 存在しない場合は新規作成
+            Favorite.objects.create(user=request.user, biblio=biblio)
             messages.success(request, f"「{biblio.title}」をお気に入りに登録しました！")
 
         # 遷移前のページに戻る（詳細画面など）

@@ -1,0 +1,41 @@
+{% load static %}
+{# お気に入りボタン・コンポーネント #}
+{% comment %}
+ 引数: 
+    item: Biblio オブジェクト
+    user: User オブジェクト
+    user_favorite_ids: お気に入りIDのセット
+    style: 'icon' (デフォルト) または 'pill' (ラベル付き)
+    form_class: formタグに付与するクラス
+{% endcomment %}
+
+{% if user.is_authenticated %}
+    <form action="{% url 'catalog:favorite_toggle' item.pk %}" method="post" class="{{ form_class }}" style="{{ style_attr }}">
+        {% csrf_token %}
+        {% if style == 'pill' %}
+            {# 詳細画面用：ラベル付きピルボタン #}
+            {% if item.id in user_favorite_ids %}
+                <button type="submit" class="btn btn-danger rounded-pill px-3 d-flex align-items-center gap-2 shadow-sm btn-fav-toggle">
+                    <i class="bi bi-heart-fill icon-static"></i>
+                    <i class="bi bi-heart icon-hover"></i> お気に入り解除
+                </button>
+            {% else %}
+                <button type="submit" class="btn btn-outline-danger rounded-pill px-3 d-flex align-items-center gap-2 btn-fav-toggle">
+                    <i class="bi bi-heart icon-static"></i>
+                    <i class="bi bi-heart-fill icon-hover"></i> お気に入り登録
+                </button>
+            {% endif %}
+        {% else %}
+            {# カード用：アイコンのみの円形ボタン #}
+            <button type="submit" class="btn btn-sm btn-light shadow-sm rounded-circle p-1 d-flex align-items-center justify-content-center btn-fav-toggle" style="width: 32px; height: 32px; position: relative; z-index: 101;">
+                {% if item.id in user_favorite_ids %}
+                    <i class="bi bi-heart-fill text-danger icon-static"></i>
+                    <i class="bi bi-heart text-danger icon-hover"></i>
+                {% else %}
+                    <i class="bi bi-heart text-muted icon-static"></i>
+                    <i class="bi bi-heart-fill text-danger icon-hover"></i>
+                {% endif %}
+            </button>
+        {% endif %}
+    </form>
+{% endif %}

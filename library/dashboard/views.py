@@ -1,11 +1,11 @@
 from catalog.models import Biblio
-from core.views.mixins import PageTitleMixin
+from core.views.mixins import LibStatusMixin, PageTitleMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, TemplateView
 from transactions.models import Lending
 
 
-class DashboardIndexView(TemplateView):
+class DashboardIndexView(LibStatusMixin, TemplateView):
     """
     サイトトップ / ダッシュボード
     ログイン状況に応じて「紹介ページ」と「ユーザー専用ダッシュボード」を出し分ける。
