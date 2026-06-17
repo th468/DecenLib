@@ -1,6 +1,6 @@
 from catalog.models import Category
 from django import template
-from django.urls import NoReverseMatch, reverse
+from django.urls import NoReverseMatch, reverse, resolve, Resolver404
 
 register = template.Library()
 
@@ -48,6 +48,7 @@ def active_link(context, url_name, css_class='active'):
 def render_breadcrumbs(context):
     """
     URL パスを解析してパンくずリストを自動生成する。
+    ラベルが定義されている有効なViewのみをリストに含める（デッドリンク防止）。
     """
     request = context.get('request')
     if not request or request.path == '/':
@@ -55,46 +56,53 @@ def render_breadcrumbs(context):
 
     path = request.path.strip('/')
     segments = path.split('/')
-
-    # URL セグメントと日本語ラベルのマッピング
-    label_map = {
-        'catalog': '蔵書をさがす',
-        'list': '検索結果',
-        'detail': '書籍詳細',
-        'dashboard': 'マイページ',
-        'accounts': 'ユーザー',
-        'login': 'ログイン',
-        'regist': '新規登録',
-        'manage': '管理メニュー',
-        'info': 'ユーザー情報',
-    }
-
     breadcrumbs = []
     current_url = '/'
 
-    for i, segment in enumerate(segments):
+    # 表示を許可するURL名称と日本語ラベルのマッピング
+    label_map = {
+        'dashboard:index': 'マイページ',
+        'catalog:booklist': '蔵書をさがす',
+        'catalog:manageindex': '管理業務',
+        'catalog:bookdetail': '書籍詳細',
+        'accounts:login': 'ログイン',
+        'accounts:regist': '新規登録',
+        'accounts:profile_detail': 'プロフィール',
+        'accounts:profile_edit': 'プロフィール編集',
+        'accounts:password_change': 'パスワード変更',
+        'accounts:password_change_done': 'パスワード変更完了',
+    }
+
+    for segment in segments:
         if not segment:
             continue
 
         current_url += f"{segment}/"
+        
+        try:
+            # 現在の階層のURLがViewとして解決可能かチェック
+            match = resolve(current_url)
+            view_name = f"{match.app_name}:{match.url_name}" if match.app_name else match.url_name
+            
+            # 1. View クラスの breadcrumb_label を優先
+            view_class = getattr(match.func, 'view_class', None)
+            label = getattr(view_class, 'breadcrumb_label', None) if view_class else None
+            
+            # 2. 定義がなければ label_map から取得
+            if not label:
+                label = label_map.get(view_name)
+            
+            # ラベルが見つからない場合は、中間パス（ページがない）とみなしてスキップ
+            if not label:
+                continue
 
-        # ID（数字）の場合は「詳細」などのラベルにする
-        if segment.isdigit():
-            # 1つ前のセグメントを見てラベルを調整
-            prev = segments[i-1] if i > 0 else ""
-            if prev == 'detail':
-                label = '詳細'
-            elif prev == 'update':
-                label = '編集'
-            else:
-                label = f'#{segment}'
-        else:
-            label = label_map.get(segment, segment.capitalize())
-
-        breadcrumbs.append({'label': label, 'url': current_url})
+            breadcrumbs.append({'label': label, 'url': current_url})
+            
+        except Resolver404:
+            # 解決できないパス（中間パス等）は表示しない
+            continue
 
     return {'links': breadcrumbs}
-
 
 @register.simple_tag
 def relative_url(value, field_name, urlencode=None):
@@ -110,7 +118,6 @@ def relative_url(value, field_name, urlencode=None):
             url = f'{url}&{encoded_querystring}'
     return url
 
-
 # --- 状態判定フィルタ ---
 
 @register.filter
@@ -120,7 +127,6 @@ def is_lent_by_others(biblio, user):
         return False
     from transactions.models import Lending
     return Lending.objects.ongoing().filter(book__biblio=biblio).exclude(user=user).exists()
-
 
 @register.filter
 def user_lending(biblio, user):
