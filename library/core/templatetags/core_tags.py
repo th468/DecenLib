@@ -118,6 +118,15 @@ def relative_url(value, field_name, urlencode=None):
             url = f'{url}&{encoded_querystring}'
     return url
 
+@register.filter
+def get_item(dictionary, key):
+    """
+    辞書から指定したキーで値を取得する。
+    """
+    if not dictionary:
+        return None
+    return dictionary.get(key)
+
 # --- 状態判定フィルタ ---
 
 @register.filter

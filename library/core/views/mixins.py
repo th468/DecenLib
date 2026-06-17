@@ -72,25 +72,38 @@ class FavoriteContextMixin:
 
 
 class LendingContextMixin:
-    """ユーザーが貸出中の書誌IDおよび蔵書IDをセット形式で取得する Mixin。"""
+    """ユーザーの貸出状況（IDセット、オブジェクト辞書、予約状況）をコンテキストに提供する Mixin。"""
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         if user.is_authenticated:
-            from transactions.models import Lending
+            from transactions.models import Lending, Reservation
 
-            # DBアクセスを1回に集約するため、タプル形式で一括取得
-            ongoing_data = Lending.objects.ongoing().filter(user=user).values_list("book__biblio_id", "book_id")
+            # 貸出中の全データを一括取得 (Book, Biblio も結合してクエリを削減)
+            lendings = list(Lending.objects.ongoing().filter(user=user).select_related("book__biblio"))
 
-            # Python側でそれぞれのIDセットに振り分け（メモリ上での高速処理）
-            biblio_ids = {item[0] for item in ongoing_data}
-            book_ids = {item[1] for item in ongoing_data}
+            # IDセットの作成
+            biblio_ids = {l.book.biblio_id for l in lendings}
+            book_ids = {l.book_id for l in lendings}
+            
+            # {book_id: lending_object} の辞書を作成（テンプレートでの逆引用）
+            user_lendings = {l.book_id: l for l in lendings}
+
+            # N+1回避：貸出中の書誌に対して、待機中の予約があるか一括チェック
+            biblios_with_reservations = set(
+                Reservation.objects.waiting().filter(biblio_id__in=biblio_ids).values_list("biblio_id", flat=True)
+            )
         else:
             biblio_ids = set()
             book_ids = set()
+            user_lendings = {}
+            biblios_with_reservations = set()
+
         context["user_lending_ids"] = biblio_ids
         context["user_lent_book_ids"] = book_ids
+        context["user_lendings"] = user_lendings
+        context["biblios_with_reservations"] = biblios_with_reservations
         return context
 
 
