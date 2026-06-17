@@ -34,6 +34,35 @@ class BiblioSearchListView(LibStatusMixin, PageTitleMixin, SearchMixin, ListView
 
         return queryset.order_by(order_by).prefetch_related("categories", "books").distinct()
 
+    def get_page_title(self):
+        query = self.request.GET.get("q", "").strip()
+        category_id = self.request.GET.get("category")
+        
+        # カテゴリ名の取得
+        category_name = ""
+        if category_id:
+            from .models import Category
+            category = Category.objects.filter(id=category_id).first()
+            if category:
+                category_name = category.name
+
+        # タイトルの組み立て
+        if query and category_name:
+            title = f"「{category_name}」内の「{query}」の検索結果"
+        elif query:
+            title = f"「{query}」の検索結果"
+        elif category_name:
+            title = f"カテゴリ：{category_name}"
+        else:
+            title = self.page_title
+
+        # 件数の追加 (Paginationにかかわらず全件数を表示)
+        if hasattr(self, 'object_list'):
+            count = self.get_queryset().count()
+            title += f" ({count}件)"
+        
+        return title
+
 # #蔵書詳細
 class BiblioDetailView(LoginRequiredMixin, LibStatusMixin, PageTitleMixin, DetailView):
     model = Biblio
