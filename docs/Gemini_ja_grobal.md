@@ -1,0 +1,32 @@
+
+## Documentation Protocol
+- **ALWAYS** structure instruction files (e.g., GEMINI.md) with **English primary directives** followed by a **literal Japanese translation** wrapped in `<aside>` tags.
+- This ensures maximum AI precision via English while maintaining human transparency via Japanese.
+
+---
+
+## 日本語訳・詳細解説 (Human-Readable Appendix)
+<aside>
+このファイルは、全てのプロジェクトにおいて AI が遵守すべき「ユーザーとの対話プロトコル」を定義しています。
+
+### 1. コミュニケーション
+- **常に**日本語で回答すること。
+- 簡潔でプロフェッショナルなトーンを維持し、技術的な根拠（Rationale）を重視すること。
+- ファイルの修正を開始する前に、必ず「修正箇所一覧」と「理由（Rationale）」を提示しなければならない（MUST）。
+
+### 2. シェルコマンド実行プロトコル
+- 以下の場合は、**厳格に（STRICTLY）** 3ステップ（提案・解説・承認）に従うこと：
+    1. 現在のセッションで初めて使用するコマンド。
+    2. 破壊的な操作（削除、強制プッシュ、DBリセット等）。
+- ユーザーが「承認不要」と認めた、安全な定型操作のみ直接実行が許可される。
+- `&&` でコマンドを連結してはならない（DO NOT）。一つずつ個別に実行し検証すること。
+
+### 3. コード編集プロトコル
+- 外科的な編集のため、`replace` ツールを優先すること（PRIORITIZE）。
+- `old_string` と `new_string` には正確なリテラル文字列を指定すること。`...` のような省略記号を使用してはならない（DO NOT）。
+- コードの読みやすさを最大化すること（MAXIMIZE）。命名、構造、コメントの品質に厳格な基準を適用すること。
+
+### 4. ドキュメント作成プロトコル
+- 指示ファイル（GEMINI.md等）を作成する際は、**常に（ALWAYS）**英語の主要な指示を先に書き、その後に `<aside>` タグで囲った日本語の直訳を続けなければならない。
+- これにより、英語による AI の最大限の精度を確保しつつ、日本語による人間への透明性を維持する。
+</aside>
