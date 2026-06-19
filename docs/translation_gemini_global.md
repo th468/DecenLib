@@ -1,8 +1,4 @@
 
-## Documentation Protocol
-- **ALWAYS** structure instruction files (e.g., GEMINI.md) with **English primary directives** followed by a **literal Japanese translation** wrapped in `<aside>` tags.
-- This ensures maximum AI precision via English while maintaining human transparency via Japanese.
-
 ---
 
 ## 日本語訳・詳細解説 (Human-Readable Appendix)
@@ -26,7 +22,3 @@
 - `old_string` と `new_string` には正確なリテラル文字列を指定すること。`...` のような省略記号を使用してはならない（DO NOT）。
 - コードの読みやすさを最大化すること（MAXIMIZE）。命名、構造、コメントの品質に厳格な基準を適用すること。
 
-### 4. ドキュメント作成プロトコル
-- 指示ファイル（GEMINI.md等）を作成する際は、**常に（ALWAYS）**英語の主要な指示を先に書き、その後に `<aside>` タグで囲った日本語の直訳を続けなければならない。
-- これにより、英語による AI の最大限の精度を確保しつつ、日本語による人間への透明性を維持する。
-</aside>

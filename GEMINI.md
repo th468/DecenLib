@@ -40,6 +40,7 @@
 - **TODO Management:** Any technical debt or future enhancements identified during implementation **MUST** be recorded in `docs/TODO.md`.
 - **Architectural Documentation:** Major design decisions, performance optimizations, and technical rationales (e.g., Mixin hierarchies, N+1 solutions) **MUST** be documented in `docs/ARCH_DESIGN.md` to ensure design transparency and knowledge transfer.
 - **Architecture First:** Prioritize fixing structural or data model issues over local surgical fixes.
+- **Translation Management:** `docs/translation_gemini.md` is a Japanese translation of this project rules for human reference. Maintain this file when instructions are updated, but do not treat it as an active system instruction.
 
 ## 6. Primary Commands
 - Test: `python library/manage.py test library`
