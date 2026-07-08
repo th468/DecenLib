@@ -36,7 +36,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(verbose_name="有効なユーザーか", default=True)
     is_staff = models.BooleanField(verbose_name="管理者か", default=False)
     lending_limit = models.PositiveIntegerField(
-        verbose_name="貸出上限冊数", default=5, help_text="ユーザーが同時に借りられる最大冊数です。"
+        verbose_name="貸出上限冊数", default=10, help_text="ユーザーが同時に借りられる最大冊数です。"
     )
     lending_period_days = models.PositiveIntegerField(
         verbose_name="貸出可能日数", default=14, help_text="このユーザーが一度の貸出で借りられる日数です。"
