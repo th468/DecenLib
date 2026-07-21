@@ -1,7 +1,6 @@
+from core.admin import BaseLogicalDeleteAdmin
 from django.contrib import admin
 from django.utils import timezone
-
-from core.admin import BaseLogicalDeleteAdmin
 
 from .models import Lending, Reservation
 

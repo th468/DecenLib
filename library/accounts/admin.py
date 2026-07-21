@@ -1,8 +1,7 @@
+from core.admin import BaseLogicalDeleteAdmin
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-
-from core.admin import BaseLogicalDeleteAdmin
 
 from .models import Department
 

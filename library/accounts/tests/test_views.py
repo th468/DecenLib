@@ -119,7 +119,7 @@ class UserAccountViewsTest(TestCase):
             "department": new_department.pk
         })
         self.assertRedirects(response, reverse("accounts:profile_detail"))
-        
+
         self.user.refresh_from_db()
         self.assertEqual(self.user.name, "更新後の名前")
         self.assertEqual(self.user.department, new_department)
@@ -135,7 +135,7 @@ class UserAccountViewsTest(TestCase):
             "new_password2": "newpass45678"
         })
         self.assertRedirects(response, reverse("accounts:password_change_done"))
-        
+
         # 新しいパスワードでログインできるか確認
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("newpass45678"))

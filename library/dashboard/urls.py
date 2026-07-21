@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import DashboardIndexView, LendingHistoryView,LendingListView,ReservationListView,FavoriteListView
+from .views import DashboardIndexView, FavoriteListView, LendingHistoryView, LendingListView, ReservationListView
 
 app_name = "dashboard"
 

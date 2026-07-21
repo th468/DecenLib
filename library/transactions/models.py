@@ -126,7 +126,7 @@ class LendingManager(BaseManager.from_queryset(LendingQuerySet)):
                 # can_renew のロジックに基づいた適切なメッセージを返す
                 if lending.is_overdue:
                     raise ValidationError("期限が過ぎている本は延長できません。一度返却してください。")
-                
+
                 new_due_date = timezone.now().date() + timedelta(days=user.lending_period_days)
                 if new_due_date <= lending.due_date:
                     raise ValidationError("これ以上延長することはできません。")
@@ -134,7 +134,7 @@ class LendingManager(BaseManager.from_queryset(LendingQuerySet)):
                 from .models import Reservation
                 if Reservation.objects.waiting().filter(biblio=book.biblio).exists():
                     raise ValidationError("この本には次に予約が入っているため、延長できません。")
-                
+
                 raise ValidationError("現在は延長手続きを行うことができません。")
 
             # 期間の更新（今日を起点にユーザーの貸出可能期間をセットする）
@@ -193,17 +193,17 @@ class Lending(BaseModel):
             return False
         if self.is_overdue:
             return False
-        
+
         # 延長後の日付が現在の期限より先であることを確認
         new_due_date = timezone.now().date() + timedelta(days=self.user.lending_period_days)
         if new_due_date <= self.due_date:
             return False
-        
+
         from .models import Reservation
         # この書誌を待っている「入荷待ち」の予約があるかチェック
         if Reservation.objects.waiting().filter(biblio=self.book.biblio).exists():
             return False
-        
+
         return True
 
     @property

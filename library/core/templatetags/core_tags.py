@@ -1,6 +1,6 @@
 from catalog.models import Category
 from django import template
-from django.urls import NoReverseMatch, reverse, resolve, Resolver404
+from django.urls import NoReverseMatch, Resolver404, resolve, reverse
 
 register = template.Library()
 
@@ -78,26 +78,26 @@ def render_breadcrumbs(context):
             continue
 
         current_url += f"{segment}/"
-        
+
         try:
             # 現在の階層のURLがViewとして解決可能かチェック
             match = resolve(current_url)
             view_name = f"{match.app_name}:{match.url_name}" if match.app_name else match.url_name
-            
+
             # 1. View クラスの breadcrumb_label を優先
             view_class = getattr(match.func, 'view_class', None)
             label = getattr(view_class, 'breadcrumb_label', None) if view_class else None
-            
+
             # 2. 定義がなければ label_map から取得
             if not label:
                 label = label_map.get(view_name)
-            
+
             # ラベルが見つからない場合は、中間パス（ページがない）とみなしてスキップ
             if not label:
                 continue
 
             breadcrumbs.append({'label': label, 'url': current_url})
-            
+
         except Resolver404:
             # 解決できないパス（中間パス等）は表示しない
             continue

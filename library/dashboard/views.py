@@ -46,7 +46,7 @@ class LendingHistoryView(LoginRequiredMixin, PageTitleMixin, ListView):
         if not user.is_authenticated:
             # LoginRequiredMixinがあるため通常はここに来ないが、型安全性のためにガード
             return Lending.objects.none()
-            
+
         return (
             user.lending_set.returned()
             .select_related("book__biblio")

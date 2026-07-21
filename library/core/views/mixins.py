@@ -86,7 +86,7 @@ class LendingContextMixin:
             # IDセットの作成
             biblio_ids = {l.book.biblio_id for l in lendings}
             book_ids = {l.book_id for l in lendings}
-            
+
             # {book_id: lending_object} の辞書を作成（テンプレートでの逆引用）
             user_lendings = {l.book_id: l for l in lendings}
 

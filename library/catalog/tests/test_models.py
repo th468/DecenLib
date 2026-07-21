@@ -134,7 +134,6 @@ class BookModelTest(TestCase, BaseModelTestMixin):
     def test_can_be_lent_to_logic(self):
         """statusおよび予約状況に応じたcan_be_lent_toの挙動テスト"""
         from accounts.factories import UserFactory
-        from transactions.models import Reservation
         from transactions.factories import ReservationFactory
         Book = self.factory_class._meta.model
 
@@ -153,9 +152,9 @@ class BookModelTest(TestCase, BaseModelTestMixin):
         self.assertFalse(book_lent.can_be_lent_to(user2))
         self.assertFalse(book_lent.can_be_lent_to(None))
 
-        # 3. RESERVED（予約中）: 
+        # 3. RESERVED（予約中）:
         book_reserved = BookFactory(status=Book.Status.RESERVED)
-        
+
         # 3a. 自身向けの READY (準備完了) 予約が存在する場合のみ貸出可能
         res1 = ReservationFactory(user=user1, book=book_reserved, status=2)  # READY
         self.assertTrue(book_reserved.can_be_lent_to(user1))

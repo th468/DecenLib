@@ -37,6 +37,20 @@ We separated form logic into two levels of granularity:
 ### 2.3. Layout Inheritance for Authentication
 We introduced `centered_card.html` as a specialized layout for focused, single-purpose screens (login, registration, password changes). This ensures a consistent user experience and simplifies responsive design across all entry points.
 
+## 3. Access Controlled Location Details (Shelf & Floor Info)
+
+### 3.1. The Challenge: Preventing Unrecorded Book Removal
+According to business requirements, book location details (shelf location photo and floor map) must not be disclosed prior to checkout or reservation confirmation. Otherwise, users could locate and take books without registering the transaction, leading to data integrity issues.
+- **Vulnerability:** Standard detail views (e.g., `/shelf/detail/<id>/`) without verification would allow path-traversal/ID guesswork, exposing locations to unauthorized users.
+
+### 3.2. The Solution: ShelfDetailView Access Control
+We implemented `ShelfDetailView` with a localized authorization check:
+- **Verification Logic:**
+  Access is permitted only if the logged-in user has:
+  1. An ongoing active loan (`Lending`) for a book belonging to the requested shelf.
+  2. A ready-for-pickup reservation (`Reservation`) for a book belonging to the requested shelf.
+- If neither condition is met, a `PermissionDenied` (HTTP 403) exception is raised, ensuring locations are strictly hidden.
+
 ---
 
 ## 1. ユーザーライブラリステータスの最適化（階層型 Mixin）
@@ -74,6 +88,22 @@ We introduced `centered_card.html` as a specialized layout for focused, single-p
 
 ### 2.3. 認証系のためのレイアウト継承
 ログイン、ユーザー登録、パスワード変更などの「単一目的で集中が必要な画面」のために `centered_card.html` を導入しました。これにより、一貫したユーザー体験を提供し、あらゆるエントリーポイントでのレスポンシブデザイン対応を簡略化しています。
+</aside>
+
+## 3. 所在情報（本棚・フロア）の開示制御
+
+<aside>
+### 3.1. 課題：未登録持ち出しの防止
+ビジネス要件として、書籍の具体的な所在情報（本棚の配置写真やフロアマップ）は、貸出中または予約が確定（受取準備完了）するまでユーザーに開示してはなりません。そうしないと、ユーザーが貸出/予約の手続きをせずに本を棚から持ち出してしまい、蔵書データの不整合が発生するためです。
+- **脆弱性:** 単純な詳細ビュー（例：`/shelf/detail/<id>/`）を作成するだけでは、URL内のIDを直接打ち込まれることで、未貸出・未予約のユーザーに対しても所在情報が漏洩してしまいます。
+
+### 3.2. 解決策：ShelfDetailView でのアクセス制限
+`ShelfDetailView` 内で、ユーザーと対象本棚の関連性を確認するアクセス制御を実装しました：
+- **アクセス許可ロジック:**
+  ログイン中のユーザーが以下のいずれかを満たしている場合のみ、詳細情報の閲覧を許可します。
+  1. 対象本棚に配架されている書籍を現在「貸出中 (`Lending.Status.LENDING`)」である。
+  2. 対象本棚に配架されている書籍を「準備完了・取置中 (`Reservation.Status.READY`)」の予約として保持している。
+- 上記の条件をいずれも満たさない場合は `PermissionDenied`（HTTP 403）をスローし、情報へのアクセスを厳格に遮断します。
 </aside>
 
 

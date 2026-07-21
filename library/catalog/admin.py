@@ -1,6 +1,5 @@
-from django.contrib import admin
-
 from core.admin import BaseLogicalDeleteAdmin
+from django.contrib import admin
 
 from .models import Biblio, Book, Category, Favorite, Floor, Shelf
 

@@ -1,20 +1,19 @@
 import random
 from datetime import timedelta
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
-from django.db import connection, transaction
-from django.utils import timezone
 
 from accounts.factories import DepartmentFactory, UserFactory
 from accounts.models import User
 from catalog.factories import (
     BiblioFactory,
     BookFactory,
-    FavoriteFactory,
     FloorFactory,
     ShelfFactory,
 )
 from catalog.models import Biblio, Book, Category, Favorite, Floor, Shelf
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+from django.db import connection, transaction
+from django.utils import timezone
 from transactions.models import Lending, Reservation
 
 

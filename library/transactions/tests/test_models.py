@@ -1,7 +1,8 @@
+from datetime import timedelta
+
 from accounts.factories import UserFactory
 from catalog.factories import BiblioFactory, BookFactory
 from core.tests.test_mixins import BaseModelTestMixin
-from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
@@ -80,7 +81,7 @@ class LendingManagerTest(TestCase):
 
         original_due = lending.due_date
         renewed = Lending.objects.renew(lending, self.user)
-        
+
         # 今日を起点に14日後に更新されているか
         expected_due = timezone.now().date() + timedelta(days=self.user.lending_period_days)
         self.assertEqual(renewed.due_date, expected_due)

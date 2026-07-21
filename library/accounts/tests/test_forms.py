@@ -1,7 +1,8 @@
-from django.test import TestCase
-from accounts.forms import UserCreationForm, ProfileEditForm, UserLoginForm
-from accounts.factories import UserFactory, DepartmentFactory
 from django.contrib.auth import get_user_model
+from django.test import TestCase
+
+from accounts.factories import DepartmentFactory, UserFactory
+from accounts.forms import ProfileEditForm, UserCreationForm, UserLoginForm
 
 User = get_user_model()
 
@@ -77,7 +78,7 @@ class UserLoginFormTest(TestCase):
         form = UserLoginForm()
         email_widget = form.fields["username"].widget
         password_widget = form.fields["password"].widget
-        
+
         self.assertEqual(email_widget.attrs["placeholder"], "example@company.com")
         self.assertTrue(email_widget.attrs["autofocus"])
         self.assertEqual(password_widget.attrs["placeholder"], "パスワードを入力")
