@@ -1,0 +1,44 @@
+name: Django CI & Ruff Check
+
+# 1. ワークフローを実行するトリガー（きっかけ）の設定
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+# 2. 実行する処理（ジョブ）の定義
+jobs:
+  build-and-test:
+    # 実行する仮想環境（サーバーのOS）を指定します
+    runs-on: ubuntu-latest
+
+    steps:
+    # ステップ 1: GitHubのリポジトリからソースコードを仮想環境にコピー（ダウンロード）します
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # ステップ 2: 仮想環境にPythonをインストールします
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13' # プロジェクトのバージョンに合わせてPython 3.13を使用
+        cache: 'pip'          # ライブラリのダウンロードを高速化するためのキャッシュ設定
+
+    # ステップ 3: 必要なPythonライブラリをインストールします
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # プロジェクトの依存関係をインストール
+        pip install -r requirements.txt
+        # チェックに必要なツール（Ruff）をインストール
+        pip install ruff
+
+    # ステップ 4: Ruffを使用して文法・フォーマットチェックを実行します
+    - name: Run Ruff check
+      run: ruff check .
+
+    # ステップ 5: Djangoの自動テストを実行します
+    # SQLite3を使用しているため、特別なデータベースサーバーの立ち上げは不要でそのまま動作します
+    - name: Run Django tests
+      run: python library/manage.py test library
