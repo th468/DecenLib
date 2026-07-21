@@ -141,3 +141,60 @@ class BookViewsTest(TestCase):
         self.assertContains(response, f"No.{self.book.count}")
         self.assertNotContains(response, f"No.{inactive_book.count}")
 
+
+class ShelfViewsTest(TestCase):
+    """
+    本棚詳細ビュー（アクセス制限付き）のテスト
+    """
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="user@example.com",
+            em_num="U001",
+            password="password123"
+        )
+        self.floor = FloorFactory(name="3F")
+        self.shelf = ShelfFactory(name="棚-ABC", floor=self.floor)
+        self.biblio = BiblioFactory(title="テスト本")
+        self.book = BookFactory(biblio=self.biblio, shelf=self.shelf)
+
+    def test_shelf_detail_login_required(self):
+        """詳細画面はログイン必須であるか"""
+        url = reverse('catalog:shelf_detail', kwargs={'pk': self.shelf.pk})
+        response = self.client.get(url)
+        self.assertRedirects(response, f"{reverse('accounts:login')}?next={url}")
+
+    def test_shelf_detail_denied_without_lending_or_reservation(self):
+        """貸出も準備完了の予約もない場合はアクセス拒否(403)されるか"""
+        self.client.login(email="user@example.com", password="password123")
+        url = reverse('catalog:shelf_detail', kwargs={'pk': self.shelf.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_shelf_detail_allowed_with_active_lending(self):
+        """貸出中の書籍がある場合はアクセス許可(200)されるか"""
+        from transactions.factories import LendingFactory
+
+        # 貸出中レコード作成 (status=1: LENDING)
+        LendingFactory.create(user=self.user, book=self.book, status=1)
+
+        self.client.login(email="user@example.com", password="password123")
+        url = reverse('catalog:shelf_detail', kwargs={'pk': self.shelf.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['shelf'], self.shelf)
+        self.assertTemplateUsed(response, 'catalog/shelf_detail.html')
+
+    def test_shelf_detail_allowed_with_ready_reservation(self):
+        """準備完了の予約がある場合はアクセス許可(200)されるか"""
+        from transactions.factories import ReservationFactory
+
+        # 予約準備完了レコード作成 (status=2: READY)
+        ReservationFactory.create(user=self.user, biblio=self.biblio, book=self.book, status=2)
+
+        self.client.login(email="user@example.com", password="password123")
+        url = reverse('catalog:shelf_detail', kwargs={'pk': self.shelf.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['shelf'], self.shelf)
+
+

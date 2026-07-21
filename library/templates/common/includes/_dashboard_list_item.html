@@ -20,7 +20,10 @@
                         {% if object.is_overdue %}(延滞中){% endif %}
                     </small>
                     <small class="text-primary fw-bold">
-                        <i class="bi bi-geo-alt-fill"></i> {{ object.book.shelf.floor.name }} / {{ object.book.shelf.name }}
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <a href="{% url 'catalog:shelf_detail' object.book.shelf.pk %}" class="text-primary text-decoration-underline">
+                            {{ object.book.shelf.floor.name }} / {{ object.book.shelf.name }}
+                        </a>
                     </small>
                 </div>
             {% elif type == 'reservation' %}
@@ -32,7 +35,10 @@
                     </span>
                     {% if object.status == 2 %}
                     <small class="text-info fw-bold">
-                        <i class="bi bi-geo-alt-fill"></i> {{ object.book.shelf.floor.name }} / {{ object.book.shelf.name }}
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <a href="{% url 'catalog:shelf_detail' object.book.shelf.pk %}" class="text-info text-decoration-underline">
+                            {{ object.book.shelf.floor.name }} / {{ object.book.shelf.name }}
+                        </a>
                     </small>
                     {% endif %}
                 </div>

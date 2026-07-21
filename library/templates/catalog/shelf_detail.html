@@ -1,0 +1,96 @@
+{% extends "common/base.html" %}
+{% load static %}
+
+{% block title %}{{ shelf.name }} | 本棚・フロア詳細 | Library{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+            <h2 class="h3 mb-0">
+                <i class="bi bi-geo-alt text-primary"></i> 所在情報詳細
+            </h2>
+            <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary rounded-pill btn-sm">
+                <i class="bi bi-arrow-left"></i> ダッシュボードに戻る
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- 1. 本棚情報 (左カラム) -->
+    <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h3 class="h5 mb-0 text-primary">
+                    <i class="bi bi-bookshelf"></i> 本棚情報: {{ shelf.name }}
+                </h3>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <div class="mb-4">
+                    <h5 class="small text-muted mb-1">本棚の説明</h5>
+                    <p class="mb-0 text-dark">
+                        {{ shelf.description|default:"詳細な説明はありません。" }}
+                    </p>
+                </div>
+
+                <div class="mt-auto">
+                    <h5 class="small text-muted mb-2">本棚の配置写真</h5>
+                    {% if shelf.location_photo %}
+                        <div class="position-relative overflow-hidden rounded-3 border">
+                            <img src="{{ shelf.location_photo.url }}" alt="{{ shelf.name }}の配置写真" class="img-fluid w-100 hover-zoom" style="max-height: 400px; object-fit: cover;">
+                        </div>
+                    {% else %}
+                        <div class="bg-light text-center py-5 rounded-3 border d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
+                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2 mb-0">本棚の画像は登録されていません。</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. フロア情報 (右カラム) -->
+    <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h3 class="h5 mb-0 text-primary">
+                    <i class="bi bi-layers"></i> フロア情報: {{ shelf.floor.name }}
+                </h3>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <div class="mb-4">
+                    <h5 class="small text-muted mb-1">所属フロア</h5>
+                    <p class="mb-0 text-dark fw-bold">
+                        {{ shelf.floor.name }}
+                    </p>
+                </div>
+
+                <div class="mt-auto">
+                    <h5 class="small text-muted mb-2">フロアマップ</h5>
+                    {% if shelf.floor.map %}
+                        <div class="position-relative overflow-hidden rounded-3 border">
+                            <img src="{{ shelf.floor.map.url }}" alt="{{ shelf.floor.name }}のマップ" class="img-fluid w-100 hover-zoom" style="max-height: 400px; object-fit: cover;">
+                        </div>
+                    {% else %}
+                        <div class="bg-light text-center py-5 rounded-3 border d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
+                            <i class="bi bi-map text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2 mb-0">フロアマップは登録されていません。</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-zoom {
+        transition: transform 0.3s ease;
+    }
+    .hover-zoom:hover {
+        transform: scale(1.02);
+    }
+</style>
+{% endblock %}

@@ -1,6 +1,7 @@
 from core.views.mixins import LibStatusMixin, PageTitleMixin, SearchMixin, StaffManagerMixin
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import (
@@ -8,8 +9,9 @@ from django.views.generic import (
     ListView,
     TemplateView,
 )
+from transactions.models import Lending, Reservation
 
-from .models import Biblio, Favorite
+from .models import Biblio, Favorite, Shelf
 
 # region __公開用ビュー（ユーザー向け）__
 
@@ -37,7 +39,7 @@ class BiblioSearchListView(LibStatusMixin, PageTitleMixin, SearchMixin, ListView
     def get_page_title(self):
         query = self.request.GET.get("q", "").strip()
         category_id = self.request.GET.get("category")
-        
+
         # カテゴリ名の取得
         category_name = ""
         if category_id:
@@ -60,7 +62,7 @@ class BiblioSearchListView(LibStatusMixin, PageTitleMixin, SearchMixin, ListView
         if hasattr(self, 'object_list'):
             count = self.get_queryset().count()
             title += f" ({count}件)"
-        
+
         return title
 
 # #蔵書詳細
@@ -79,6 +81,45 @@ class BiblioDetailView(LoginRequiredMixin, LibStatusMixin, PageTitleMixin, Detai
         # セッションから表示モードを取得し、同時に削除
         context["reveal_mode"] = self.request.session.pop("reveal_mode", None)
         return context
+
+
+# 本棚・フロア詳細（アクセス制限付き）
+class ShelfDetailView(LoginRequiredMixin, PageTitleMixin, DetailView):
+    model = Shelf
+    template_name = "catalog/shelf_detail.html"
+    context_object_name = "shelf"
+    page_title = "本棚・フロア詳細"
+
+    def get_queryset(self):
+        # 関連する Floor 情報を効率的に取得するために select_related を使用
+        return super().get_queryset().select_related("floor")
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        # アクセス制限: ログインユーザーが、この本棚にある本の「貸出中」または「準備完了の予約」を持っているかチェック
+        user = request.user
+
+        has_active_lending = Lending.objects.filter(
+            user=user,
+            book__shelf=self.object,
+            status=Lending.Status.LENDING
+        ).exists()
+
+        has_active_reservation = Reservation.objects.filter(
+            user=user,
+            book__shelf=self.object,
+            status=Reservation.Status.READY
+        ).exists()
+
+        if not (has_active_lending or has_active_reservation):
+            raise PermissionDenied(
+                "この本棚の所在情報にアクセスする権限がありません。"
+                "所在情報は、貸出中または予約が準備完了になった後にのみ確認できます。"
+            )
+
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
 
 
 # #お気に入り登録/解除（トグル）
