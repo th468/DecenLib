@@ -84,11 +84,11 @@ class LendingContextMixin:
             lendings = list(Lending.objects.ongoing().filter(user=user).select_related("book__biblio"))
 
             # IDセットの作成
-            biblio_ids = {l.book.biblio_id for l in lendings}
-            book_ids = {l.book_id for l in lendings}
+            biblio_ids = {lending.book.biblio_id for lending in lendings}
+            book_ids = {lending.book_id for lending in lendings}
 
             # {book_id: lending_object} の辞書を作成（テンプレートでの逆引用）
-            user_lendings = {l.book_id: l for l in lendings}
+            user_lendings = {lending.book_id: lending for lending in lendings}
 
             # N+1回避：貸出中の書誌に対して、待機中の予約があるか一括チェック
             biblios_with_reservations = set(
@@ -116,8 +116,16 @@ class ReservationContextMixin:
         if user.is_authenticated:
             from transactions.models import Reservation
 
-            reservation_ids = set(Reservation.objects.ongoing().filter(user=user).values_list("biblio_id", flat=True))
-            ready_book_ids = set(Reservation.objects.ready_for_pickup().filter(user=user).values_list("book_id", flat=True))
+            reservation_ids = set(
+                Reservation.objects.ongoing()
+                .filter(user=user)
+                .values_list("biblio_id", flat=True)
+            )
+            ready_book_ids = set(
+                Reservation.objects.ready_for_pickup()
+                .filter(user=user)
+                .values_list("book_id", flat=True)
+            )
         else:
             reservation_ids = set()
             ready_book_ids = set()

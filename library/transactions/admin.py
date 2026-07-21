@@ -59,7 +59,10 @@ class LendingAdmin(BaseLogicalDeleteAdmin):
             status=Lending.Status.RETURNED,
             return_date=timezone.now().date(),
         )
-        self.message_user(request, f"{updated_count} 件の貸出を返却済みに更新しました。（Book.status は別途確認してください）")
+        self.message_user(
+            request,
+            f"{updated_count} 件の貸出を返却済みに更新しました。（Book.status は別途確認してください）",
+        )
 
 
 @admin.register(Reservation)

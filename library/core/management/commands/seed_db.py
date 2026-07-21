@@ -49,7 +49,23 @@ class Command(BaseCommand):
 
         self.stdout.write("=== 全データを一掃し、クリーンな再投入を開始します ===")
 
-        # 3. 外部キー制約を一時的に無視して物理削除 (SQLite用)
+        # 3. データの物理削除
+        self._clear_database()
+
+        # 4. 基礎データの作成
+        admin, depts, categories, floors, shelves, users = self._create_base_data()
+
+        # 5. 書籍の作成
+        self._create_books_and_biblios(categories, shelves)
+
+        # 6. トランザクションデータの作成 (お気に入り、貸出、予約)
+        self._create_transaction_data(admin, users)
+
+        # 7. 統計レポート
+        self._print_stats()
+
+    def _clear_database(self):
+        # 外部キー制約を一時的に無視して物理削除 (SQLite用)
         with transaction.atomic():
             with connection.cursor() as cursor:
                 cursor.execute("PRAGMA foreign_keys = OFF;")
@@ -68,7 +84,7 @@ class Command(BaseCommand):
 
                 cursor.execute("PRAGMA foreign_keys = ON;")
 
-        # 4. 基礎データの作成
+    def _create_base_data(self):
         self.stdout.write("基礎データを再構築中...")
 
         # 管理者ユーザー
@@ -112,14 +128,14 @@ class Command(BaseCommand):
         users = UserFactory.create_batch(10, department=random.choice(depts))
         self.stdout.write(f"  - 一般ユーザーを {len(users)} 件作成しました。")
 
-        # 5. 書籍（Biblio / Book）の作成
+        return admin, depts, categories, floors, shelves, users
+
+    def _create_books_and_biblios(self, categories, shelves):
         self.stdout.write("書籍データを生成中...")
-        biblios = []
         for _ in range(50):
             biblio = BiblioFactory()
             # カテゴリをランダムに1〜2個紐付け
             biblio.categories.set(random.sample(categories, random.randint(1, 2)))
-            biblios.append(biblio)
 
             # 各書誌に対して1〜3冊の蔵書(Book)を作成
             for _ in range(random.randint(1, 3)):
@@ -129,16 +145,20 @@ class Command(BaseCommand):
             f"  - 書誌 {Biblio.objects.count()} 件、蔵書 {Book.objects.count()} 件を作成しました。"
         )
 
-        # 6. トランザクションデータの作成 (貸出・予約)
-        self.stdout.write("トランザクションデータを生成中...")
-        from django.core.exceptions import ValidationError
+    def _create_transaction_data(self, admin, users):
+        # お気に入りデータの作成
+        self._create_favorites(admin)
 
-        active_users = list(users)
+        # 返記済み履歴（過去の貸出）データの作成
+        self._create_returned_history(admin, users)
 
-        # =====================================================================
-        # 6-1. お気に入りデータの作成
-        # =====================================================================
-        # 管理者お気に入り（5件）
+        # 現在進行中の貸出（通常・延滞）データの作成
+        self._create_active_lendings(admin, users)
+
+        # 予約データの作成
+        self._create_reservations(admin, users)
+
+    def _create_favorites(self, admin):
         admin_favorites_count = 0
         all_biblios = list(Biblio.objects.all())
         random.shuffle(all_biblios)
@@ -149,11 +169,12 @@ class Command(BaseCommand):
             admin_favorites_count += 1
         self.stdout.write(f"  - 管理者お気に入りデータを {admin_favorites_count} 件作成しました。")
 
-        # =====================================================================
-        # 6-2. 返却済み履歴（過去の貸出）データの作成
-        # =====================================================================
+    def _create_returned_history(self, admin, users):
+        from django.core.exceptions import ValidationError
+
         self.stdout.write("過去の返却済み履歴データを生成中...")
         available_books = list(Book.objects.filter(status=Book.Status.AVAILABLE))
+        active_users = list(users)
 
         # 管理者用 (10件)
         admin_returned_count = 0
@@ -192,14 +213,17 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"  - 一般返却履歴作成スキップ: {e}"))
         self.stdout.write(f"  - 一般返却済み履歴データを {general_returned_count} 件作成しました。")
 
-
-        # =====================================================================
-        # 6-3. 現在進行中の貸出（通常・延滞）データの作成
-        # =====================================================================
+    def _create_active_lendings(self, admin, users):
         self.stdout.write("現在進行中の貸出データを生成中...")
         available_books = list(Book.objects.filter(status=Book.Status.AVAILABLE))
+        active_users = list(users)
 
-        # A. 管理者用（通常貸出5件 ＋ 延滞2件 ＝ 計7件）
+        self._create_admin_active_lendings(admin, available_books)
+        self._create_general_active_lendings(active_users, available_books)
+
+    def _create_admin_active_lendings(self, admin, available_books):
+        from django.core.exceptions import ValidationError
+
         admin_active_lendings = []
         for _ in range(7):
             if not available_books:
@@ -224,7 +248,9 @@ class Command(BaseCommand):
             f"延滞貸出データを {admin_overdue_count} 件作成しました。"
         )
 
-        # B. 一般ユーザー用（通常貸出10件 ＋ 延滞3件 ＝ 計13件）
+    def _create_general_active_lendings(self, active_users, available_books):
+        from django.core.exceptions import ValidationError
+
         general_active_lendings = []
         for _ in range(13):
             if not available_books or not active_users:
@@ -250,18 +276,21 @@ class Command(BaseCommand):
             f"延滞貸出データを {general_overdue_count} 件作成しました。"
         )
 
-
-        # =====================================================================
-        # 6-4. 予約データの作成
-        # =====================================================================
+    def _create_reservations(self, admin, users):
         self.stdout.write("予約データを生成中...")
+        active_users = list(users)
+
+        self._create_admin_reservations(admin)
+        self._create_general_reservations(active_users)
+
+    def _create_admin_reservations(self, admin):
+        from django.core.exceptions import ValidationError
 
         # 管理者が現在借りている書誌IDを取得（予約重複エラー回避のため）
         admin_borrowed_biblio_ids = list(
             Lending.objects.ongoing().filter(user=admin).values_list("book__biblio_id", flat=True)
         )
 
-        # A. 管理者用（READY 3件 ＋ WAITING 2件 ＝ 計5件）
         admin_ready_res_count = 0
         admin_waiting_res_count = 0
 
@@ -307,12 +336,12 @@ class Command(BaseCommand):
             f"入荷待ち予約データを {admin_waiting_res_count} 件作成しました。"
         )
 
-        # B. 一般ユーザー用（READY 5件 ＋ WAITING 5件 ＋ キャンセル2件）
+    def _create_general_reservations(self, active_users):
         general_ready_res_count = 0
         general_waiting_res_count = 0
         general_canceled_res_count = 0
 
-        # 再度シャッフル
+        all_biblios = list(Biblio.objects.all())
         random.shuffle(all_biblios)
 
         for biblio in all_biblios:
@@ -321,39 +350,16 @@ class Command(BaseCommand):
 
             # ランダムにユーザーを1人選定
             user = random.choice(active_users)
+            res_type = self._try_create_general_reservation(
+                user, biblio, general_ready_res_count, general_waiting_res_count, general_canceled_res_count
+            )
 
-            # すでに該当ユーザーが借りている、または予約済みの場合はスキップ
-            if Lending.objects.ongoing().filter(user=user, book__biblio=biblio).exists():
-                continue
-            if Reservation.objects.ongoing().filter(user=user, biblio=biblio).exists():
-                continue
-
-            books = biblio.books.all()
-            if not books.exists():
-                continue
-
-            has_available = books.filter(status=Book.Status.AVAILABLE).exists()
-
-            if has_available and general_ready_res_count < 5:
-                try:
-                    Reservation.objects.create_reservation(user, biblio)
-                    general_ready_res_count += 1
-                except ValidationError as e:
-                    self.stdout.write(self.style.WARNING(f"  - 一般準備完了予約作成スキップ: {e}"))
-            elif not has_available and general_waiting_res_count < 5:
-                try:
-                    Reservation.objects.create_reservation(user, biblio)
-                    general_waiting_res_count += 1
-                except ValidationError as e:
-                    self.stdout.write(self.style.WARNING(f"  - 一般入荷待ち予約作成スキップ: {e}"))
-            elif general_canceled_res_count < 2:
-                # キャンセル用データ（予約してから即時キャンセル）
-                try:
-                    res = Reservation.objects.create_reservation(user, biblio)
-                    Reservation.objects.cancel_reservation(res, remark="ユーザー都合によるキャンセル（デモ）")
-                    general_canceled_res_count += 1
-                except ValidationError as e:
-                    self.stdout.write(self.style.WARNING(f"  - 一般キャンセル予約作成スキップ: {e}"))
+            if res_type == "ready":
+                general_ready_res_count += 1
+            elif res_type == "waiting":
+                general_waiting_res_count += 1
+            elif res_type == "canceled":
+                general_canceled_res_count += 1
 
         self.stdout.write(
             f"  - 一般準備完了予約（取置中）データを {general_ready_res_count} 件、"
@@ -361,6 +367,44 @@ class Command(BaseCommand):
             f"キャンセル済み予約データを {general_canceled_res_count} 件作成しました。"
         )
 
+    def _try_create_general_reservation(self, user, biblio, ready_count, waiting_count, canceled_count):
+        from django.core.exceptions import ValidationError
+
+        # すでに該当ユーザーが借りている、または予約済みの場合はスキップ
+        if Lending.objects.ongoing().filter(user=user, book__biblio=biblio).exists():
+            return None
+        if Reservation.objects.ongoing().filter(user=user, biblio=biblio).exists():
+            return None
+
+        books = biblio.books.all()
+        if not books.exists():
+            return None
+
+        has_available = books.filter(status=Book.Status.AVAILABLE).exists()
+
+        if has_available and ready_count < 5:
+            try:
+                Reservation.objects.create_reservation(user, biblio)
+                return "ready"
+            except ValidationError as e:
+                self.stdout.write(self.style.WARNING(f"  - 一般準備完了予約作成スキップ: {e}"))
+        elif not has_available and waiting_count < 5:
+            try:
+                Reservation.objects.create_reservation(user, biblio)
+                return "waiting"
+            except ValidationError as e:
+                self.stdout.write(self.style.WARNING(f"  - 一般入荷待ち予約作成スキップ: {e}"))
+        elif canceled_count < 2:
+            # キャンセル用データ（予約してから即時キャンセル）
+            try:
+                res = Reservation.objects.create_reservation(user, biblio)
+                Reservation.objects.cancel_reservation(res, remark="ユーザー都合によるキャンセル（デモ）")
+                return "canceled"
+            except ValidationError as e:
+                self.stdout.write(self.style.WARNING(f"  - 一般キャンセル予約作成スキップ: {e}"))
+        return None
+
+    def _print_stats(self):
         # 統計レポート
         self.stdout.write(self.style.SUCCESS("\n=== 完了しました！ ==="))
         self.stdout.write(f"  - 書誌 (Biblio) 数: {Biblio.objects.count()}")

@@ -149,7 +149,11 @@ class UserAccountViewsTest(TestCase):
             "new_password2": "newpass45678"
         })
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response.context["form"], "old_password", "元のパスワードが間違っています。もう一度入力してください。")
+        self.assertFormError(
+            response.context["form"],
+            "old_password",
+            "元のパスワードが間違っています。もう一度入力してください。",
+        )
 
     def test_password_change_fail_mismatched_new_passwords(self):
         """パスワード変更失敗：新しいパスワード（確認用）が一致しない場合"""
