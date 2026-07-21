@@ -1,5 +1,6 @@
 asgiref==3.11.1
 Django==6.0.2
+django-environ==0.13.0
 django-widget-tweaks==1.5.1
 factory_boy==3.3.3
 Faker==40.15.0
