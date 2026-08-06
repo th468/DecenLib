@@ -1,0 +1,13 @@
+name: library_portfolio
+
+services:
+  web:
+    build: .
+    container_name: django_library_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: uv run python library/manage.py runserver 0.0.0.0:8000
