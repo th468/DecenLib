@@ -65,10 +65,13 @@ class Command(BaseCommand):
         self._print_stats()
 
     def _clear_database(self):
-        # 外部キー制約を一時的に無視して物理削除 (SQLite用)
+        # データベースエンジンに応じた外部キー制約の無効化処理 (マルチDB対応)
         with transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("PRAGMA foreign_keys = OFF;")
+                if connection.vendor == "sqlite":
+                    cursor.execute("PRAGMA foreign_keys = OFF;")
+                elif connection.vendor == "postgresql":
+                    cursor.execute("SET session_replication_role = 'replica';")
 
                 self.stdout.write("既存データを一括削除中...")
                 # BaseModel の論理削除を回避するため、all_objects.hard_delete() を使用
@@ -82,7 +85,10 @@ class Command(BaseCommand):
                 # 管理者以外のユーザーを物理削除
                 User.objects.exclude(email="admin@example.com").delete()
 
-                cursor.execute("PRAGMA foreign_keys = ON;")
+                if connection.vendor == "sqlite":
+                    cursor.execute("PRAGMA foreign_keys = ON;")
+                elif connection.vendor == "postgresql":
+                    cursor.execute("SET session_replication_role = 'origin';")
 
     def _create_base_data(self):
         self.stdout.write("基礎データを再構築中...")
