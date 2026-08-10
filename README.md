@@ -1,8 +1,9 @@
-
-[![Python](https://img.shields.io/badge/Python-3.14-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-6.0.2-092E20?style=flat-square&logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-6.0.7-092E20?style=flat-square&logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Package_Manager](https://img.shields.io/badge/uv-Fast-purple?style=flat-square)](https://github.com/astral-sh/uv)
 [![Code_Style](https://img.shields.io/badge/Code__Style-Ruff-black?style=flat-square)](https://github.com/astral-sh/ruff)
-[![Database](https://img.shields.io/badge/Database-SQLite3-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://sqlite.org/)
 
 <br/>
 
@@ -109,10 +110,12 @@ Basemodelは論理削除に関わるis_activeフィールドやdeleteメソッ�
 
 ##  技術スタック
 
-*   **言語/フレームワーク**: Python 3.14 / Django 6.0.2
+*   **言語/フレームワーク**: Python 3.12 / Django 6.0
+*   **環境構築/コンテナ**: Docker Compose / Dockerfile (uv-based)
+*   **パッケージ管理**: uv
 *   **フロントエンド**: HTML5 / Vanilla CSS / Bootstrap 5 / django-widget-tweaks
-*   **静的解析・品質保証**: Ruff (Linter & Formatter) 
-*   **データベース**: SQLite3
+*   **静的解析・品質保証**: Ruff (Linter & Formatter) / mypy (Type Check)
+*   **データベース**: PostgreSQL (Docker Compose) / SQLite3 (ローカル代替)
 *   **テスト・シードデータ**: factory_boy / Faker
 
 
@@ -245,53 +248,45 @@ erDiagram
 
 
 
-## 5. クイックスタート (セットアップ・起動手順)
+## 5. クイックスタート (Docker環境での即時起動)
 
+Docker Desktop がインストールされている環境であれば、手動での環境構築なしでワンコマンドで即座に起動できます。
 
-
-ローカル環境で本システムを起動するための手順です。
-
-### 5.1. 依存パッケージのインストール
-仮想環境を作成・アクティベートした状態で、以下のコマンドを実行します。
+### 5.1. リポジトリの取得と環境変数ファイルの準備
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/th468/DecenLib
+cd DecenLib
+cp .env.example .env
 ```
 
-### 5.2. データベースマイグレーション
-データベースの初期化とテーブル作成を行います。
+### 5.2. Docker コンテナの起動
+以下のコマンドで、Webサーバー（Django）とデータベース（PostgreSQL）が起動し、自動的にデータベースマイグレーションが実行されます。
 ```bash
-python library/manage.py migrate
+docker compose up --build
 ```
 
-### 5.3. デモデータの自動生成（シードデータの挿入）
-FakerとFactory Boyを利用し、テスト用のダミーデータ（部署、ユーザー、本棚、蔵書、貸出履歴など）を一括生成します。
+### 5.3. デモデータの投入（任意・推奨）
+別ターミナルから以下のコマンドを実行すると、テスト用のダミーデータ（部署、ユーザー、本棚、蔵書、貸出・予約履歴など）を一括生成します。
 ```bash
-python library/manage.py seed_db
+docker compose exec web uv run python library/manage.py seed_db --no-input
 ```
-> [!WARNING]
-> このスクリプトを実行すると、既存のデータベースレコード（管理者以外の全データ）が一掃（`hard_delete`）され、新しく再生成されます。
 
-**自動生成されるデフォルトアカウント**:
+**デモ用デフォルトアカウント**:
 *   管理者アカウント: `admin@example.com` / パスワード: `password123`
 
-### 5.4. ローカルサーバーの起動
+### 5.4. アプリケーションへアクセス
+ブラウザで **`http://localhost:8000/`** にアクセスして動作を確認します。
+
+### 5.5. 品質保証 & テスト実行 (コンテナ内)
 ```bash
-python library/manage.py runserver
+# 単体テストの実行
+docker compose exec web uv run python library/manage.py test library
+
+# 静的型チェック (mypy)
+docker compose exec web uv run mypy .
+
+# コードの整形・静的解析 (Ruff)
+docker compose exec web uv run ruff check .
 ```
-起動後、ブラウザで `http://127.0.0.1:8000/` にアクセスして動作を確認します。
-
-###  品質保証 & テスト実行
-
-
-コード品質を担保するため、静的解析ツールと単体テストを導入しています。
-
-*   **単体テストの実行**:
-    ```bash
-    python library/manage.py test library
-    ```
-*   **コードの整形・静的解析 (Linter / Formatter)**:
-    ```bash
-    ruff check .
-    ```
 
 ---
