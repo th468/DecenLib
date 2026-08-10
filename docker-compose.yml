@@ -16,8 +16,10 @@ services:
       - db
     # migrate を自動実行してから開発サーバーを起動
     command: >
-      sh -c "uv run python library/manage.py migrate &&
-             uv run python library/manage.py runserver 0.0.0.0:8000"
+      sh -c "uv run python library/manage.py makemigrations &&
+             uv run python library/manage.py migrate &&
+             uv run python library/manage.py runserver 0.0.0.0:8000 &&
+             uv run python library/manage.py seed_db --no-input"
 
   db:
     image: postgres:16-alpine
