@@ -297,3 +297,7 @@ $RECYCLE.BIN/
 drafts/
 
 # End of https://www.toptal.com/developers/gitignore/api/django,python,windows
+
+# 静的ファイルの集約フォルダを Git 管理から除外                                                                                                                            
+staticfiles/                                                                                                                                                               
+library/staticfiles/ 

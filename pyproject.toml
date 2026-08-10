@@ -8,8 +8,10 @@ dependencies = [
     "django>=6.0.7",
     "django-environ>=0.14.0",
     "django-widget-tweaks>=1.5.1",
+    "gunicorn>=26.0.0",
     "pillow>=12.3.0",
     "psycopg[binary]>=3.3.4",
+    "whitenoise>=6.12.0",
 ]
 
 [tool.ruff]

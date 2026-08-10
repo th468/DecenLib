@@ -20,5 +20,5 @@ COPY . /app/
 # ポートの開放
 EXPOSE 8000
 
-# 開発用サーバー起動コマンド
-CMD ["uv", "run", "python", "library/manage.py", "runserver", "0.0.0.0:8000"]
+# 本番用 Web サーバー起動コマンド (Gunicorn)
+CMD ["sh", "-c", "uv run python library/manage.py collectstatic --noinput && uv run gunicorn --chdir library config.wsgi:application --bind 0.0.0.0:8000"]
