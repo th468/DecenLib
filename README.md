@@ -21,9 +21,15 @@ DecenLibは、オフィス内などで分散する書籍をローコストで有
 
 ## URL
 
-(URL)
+https://decenlib.onrender.com/
 
-テスト用ログインユーザー情報：（）
+<br/>
+
+テスト用ログイン情報：admin@example.com / password123
+
+<br/>
+
+※Renderの無料プランを使用しているため、アクセス後、起動までに10秒～1分ほど時間がかかります。
 
 <br/>
 
