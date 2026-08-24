@@ -4,6 +4,7 @@
 [![Database](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Package_Manager](https://img.shields.io/badge/uv-Fast-purple?style=flat-square)](https://github.com/astral-sh/uv)
 [![Code_Style](https://img.shields.io/badge/Code__Style-Ruff-black?style=flat-square)](https://github.com/astral-sh/ruff)
+[![CI](https://github.com/th468/DecenLib/actions/workflows/django-ci.yml/badge.svg)](https://github.com/th468/DecenLib/actions)
 
 <br/>
 

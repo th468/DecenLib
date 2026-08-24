@@ -1,47 +1,48 @@
-name: Django CI & Ruff Check
+name: Django CI & Quality Check
 
-# 1. ワークフローを実行するトリガー（きっかけ）の設定
+# 1. ワークフローを実行するトリガーの設定
 on:
   push:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
 
-# 2. 実行する処理（ジョブ）の定義
+# 2. 実行するジョブの定義
 jobs:
-  build-and-test:
-    # 実行する仮想環境（サーバーのOS）を指定します
+  test-and-quality:
     runs-on: ubuntu-latest
 
     steps:
-    # ステップ 1: GitHubのリポジトリからソースコードを仮想環境にコピー（ダウンロード）します
+    # ステップ 1: リポジトリのソースコードを取得
     - name: Checkout code
       uses: actions/checkout@v5
 
-    # ステップ 2: 仮想環境にPythonをインストールします
+    # ステップ 2: uv (高速パッケージマネージャー) のセットアップ
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    # ステップ 3: Python 3.12 環境のセットアップ
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.13' # プロジェクトのバージョンに合わせてPython 3.13を使用
-        cache: 'pip'          # ライブラリのダウンロードを高速化するためのキャッシュ設定
+        python-version: '3.12'
 
-    # ステップ 3: 必要なPythonライブラリをインストールします
+    # ステップ 4: uv による依存関係の高速インストール
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        # プロジェクトの依存関係をインストール
-        pip install -r requirements.txt
-        # チェックに必要なツール（Ruff）をインストール
-        pip install ruff
+      run: uv sync
 
-    # ステップ 4: Ruffを使用して文法・フォーマットチェックを実行します
+    # ステップ 5: Ruff による静的解析 & フォーマットチェック
     - name: Run Ruff check
-      run: ruff check .
+      run: uv run ruff check .
 
-    # ステップ 5: Djangoの自動テストを実行します
-    # SQLite3を使用しているため、特別なデータベースサーバーの立ち上げは不要でそのまま動作します
+    # ステップ 6: mypy による静的型チェック
+    - name: Run mypy type check
+      run: uv run mypy .
+
+    # ステップ 7: Django 単体テストの実行
     - name: Run Django tests
-      working-directory: library
       env:
-        SECRET_KEY: "django-insecure-dummy-key-for-testing"
-      run: python manage.py test
+        SECRET_KEY: "django-insecure-dummy-key-for-ci-testing"
+      run: uv run python library/manage.py test library
