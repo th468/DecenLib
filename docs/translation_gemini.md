@@ -16,7 +16,11 @@
   - `dashboard/`: 統合ポータルUI。アプリを跨いだデータの可視化。
 
 ### 3. 技術スタック
-(Django 6.0.2, Python 3.14, Ruff, mypy 等を使用)
+- **フレームワーク:** Django 6.0 / Python 3.12
+- **パッケージ管理・ツール:** uv, django-widget-tweaks, Factory Boy, Faker
+- **品質・型安全性:** Ruff (Lint/Format), mypy (Type Check)
+- **コンテナ・インフラ:** Docker, Docker Compose, Gunicorn, WhiteNoise
+- **データベース:** PostgreSQL 16 (Docker / Render) / SQLite3 (ローカル代替)
 
 ### 4. エンジニアリング基準
 #### モデルとロジック
@@ -41,9 +45,9 @@
 - **翻訳管理:** `docs/translation_gemini.md` は人間が参照するためのプロジェクトルールの日本語訳である。指示が更新された際はこのファイルをメンテナンスすること。ただし、これをアクティブなシステム指示書として扱ってはならない。
 
 ### 6. 主要コマンド
-- テスト: `python library/manage.py test library`
-- Quality: `ruff check .` / `mypy .`
-- データベース: `python library/manage.py makemigrations` / `migrate`
+- ローカル (uv): `uv run python library/manage.py test library` / `uv run ruff check .` / `uv run mypy .`
+- Docker: `docker compose up --build` / `docker compose exec web uv run python library/manage.py test library`
+- データベース: `docker compose exec web uv run python library/manage.py migrate` (または `uv run python library/manage.py migrate`)
 
 ### 7. セッション終了プロトコル
 - **まとめ形式:** ユーザーから明示的な指示があった際に、成果の簡潔な要約を提供すること。

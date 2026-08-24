@@ -14,10 +14,11 @@
   - `dashboard/`: Integrated portal UI. Cross-app data visualization.
 
 ## 3. Tech Stack
-- **Framework:** Django 6.0.2 / Python 3.14
-- **Tools:** django-widget-tweaks, Factory Boy, Faker
-- **Quality:** Ruff (Lint/Format), mypy (Type Check)
-- **Database:** SQLite3
+- **Framework:** Django 6.0 / Python 3.12
+- **Tools & Package Manager:** uv, django-widget-tweaks, Factory Boy, Faker
+- **Quality & Type Safety:** Ruff (Lint/Format), mypy (Type Check)
+- **Container & Infra:** Docker, Docker Compose, Gunicorn, WhiteNoise
+- **Database:** PostgreSQL 16 (Docker / Render) / SQLite3 (Fallback)
 
 ## 4. Engineering Standards
 ### Models & Logic
@@ -43,9 +44,9 @@
 - **Translation Management:** `docs/translation_gemini.md` is a Japanese translation of this project rules for human reference. Maintain this file when instructions are updated, but do not treat it as an active system instruction.
 
 ## 6. Primary Commands
-- Test: `python library/manage.py test library`
-- Quality: `ruff check .` / `mypy .`
-- Database: `python library/manage.py makemigrations` / `migrate`
+- Local (uv): `uv run python library/manage.py test library` / `uv run ruff check .` / `uv run mypy .`
+- Docker: `docker compose up --build` / `docker compose exec web uv run python library/manage.py test library`
+- Database: `docker compose exec web uv run python library/manage.py migrate` (or `uv run python library/manage.py migrate`)
 
 ## 7. Session Wrap-up Protocol
 - **Summary Format:** When explicitly instructed by the user, provide a concise summary of the achievements.

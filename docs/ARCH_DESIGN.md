@@ -229,3 +229,46 @@ erDiagram
 ```
 
 ---
+
+## 3. インフラストラクチャ & デプロイ設計
+
+### 3.1. 概要 & システム構成
+本システムは、開発環境の完全な再現性（Dev/Prod Parity）と高速なデリバリーを実現するため、Docker コンテナおよび `uv` によるパッケージ管理を採用し、本番環境には Render (PaaS) + PostgreSQL を採用しています。
+
+```mermaid
+graph TD
+    subgraph Local [ローカル開発環境: Docker Compose]
+        DevUser[開発者] -->|docker compose up| DevWeb[Webコンテナ: Django + uv / runserver]
+        DevWeb <-->|DATABASE_URL| DevDB[(DBコンテナ: PostgreSQL 16)]
+        DevWeb -.->|Fallback| SQLiteFile[db.sqlite3]
+    end
+
+    subgraph Production [本番環境: Render]
+        ProdUser[利用者 / 採用担当者] -->|HTTPS| ProdWeb[Render Web Service: Gunicorn + WhiteNoise]
+        ProdWeb <-->|Internal DATABASE_URL| ProdDB[(Render PostgreSQL Managed DB)]
+    end
+
+    DevUser -->|git push| GitHub[GitHub Repository]
+    GitHub -->|Auto Deploy| ProdWeb
+```
+
+### 3.2. 技術選定理由 (Technical Rationale)
+
+1. **パッケージ管理 (`uv`)**:
+   - 従来の `pip` / `virtualenv` に比べ、Rust 製の高速なリゾルバにより依存関係解決およびコンテナビルド時間を大幅に短縮。
+   - `pyproject.toml` (PEP 621) による標準化されたメタデータ管理と、本番用 (`dependencies`) / 開発用 (`dependency-groups.dev`) の明確な責務分離。
+
+2. **コンテナ化 (`Docker` & `Docker Compose`)**:
+   - ホストOSの環境差異を完全に排除し、クローン後に `docker compose up --build` のみで即座に動作するポータビリティを確保。
+   - ボリュームマウントによるライブリロード（開発効率）と、名前付きボリュームによる DB データ永続化の両立。
+
+3. **マルチデータベース設計 (`PostgreSQL` & `SQLite3`)**:
+   - `django-environ` を活用し、`DATABASE_URL` 環境変数の有無によって PostgreSQL（本番・Docker）と SQLite3（ローカル軽量実行）をコード無修正でシームレスに切り替え可能。
+   - `seed_db` 管理コマンド内でも `connection.vendor` による動的分岐を行い、複数 DB エンジンに対する制約解除・一括物理削除を安全に実現。
+
+4. **本番配信アーキテクチャ (`Gunicorn` + `WhiteNoise` + `Render`)**:
+   - **Gunicorn**: WSGI HTTP サーバーによるマルチワーカー並列リクエスト処理。
+   - **WhiteNoise**: `DEBUG=False` の本番運用時でも、外部 Web サーバー（Nginx 等）を介さず Django 単体で静的ファイルの効率的な圧縮・キャッシュ付き配信を実現。
+   - **Render**: Dockerfile ベースの Git 連携自動デプロイ（CI/CD）により、運用コストを最小化しつつ即座に体験可能な公開環境を提供。
+
+---
