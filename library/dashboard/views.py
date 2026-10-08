@@ -1,3 +1,6 @@
+from typing import cast
+
+from accounts.models import User
 from catalog.models import Biblio
 from core.views.mixins import LibStatusMixin, PageTitleMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -62,7 +65,8 @@ class LendingListView(LoginRequiredMixin, LibStatusMixin, PageTitleMixin, ListVi
     page_title = "貸出中の書籍"
 
     def get_queryset(self):
-        return self.request.user.active_lendings
+        user = cast(User, self.request.user)
+        return user.active_lendings
 
 
 class ReservationListView(LoginRequiredMixin, LibStatusMixin, PageTitleMixin, ListView):
@@ -76,7 +80,8 @@ class ReservationListView(LoginRequiredMixin, LibStatusMixin, PageTitleMixin, Li
     page_title = "予約中の書籍"
 
     def get_queryset(self):
-        return self.request.user.active_reservations
+        user = cast(User, self.request.user)
+        return user.active_reservations
 
 
 class FavoriteListView(LoginRequiredMixin, LibStatusMixin, PageTitleMixin, ListView):
@@ -90,4 +95,5 @@ class FavoriteListView(LoginRequiredMixin, LibStatusMixin, PageTitleMixin, ListV
     page_title = "お気に入りリスト"
 
     def get_queryset(self):
-        return self.request.user.favorite_biblios
+        user = cast(User, self.request.user)
+        return user.favorite_biblios

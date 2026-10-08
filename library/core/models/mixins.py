@@ -3,7 +3,7 @@ import datetime
 
 class RenameUniqueFieldsMixin:
     # 子クラスで定義し、ユニーク制約を持つフィールドをリストとして渡す
-    delete_unique_fields = []
+    delete_unique_fields: list[str] = []
 
     def perform_rename(self):
 

@@ -36,8 +36,9 @@ class ProfileEditForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if "department" in self.fields:
-            self.fields["department"].empty_label = "部署を選択してください"
+        department_field = self.fields.get("department")
+        if isinstance(department_field, forms.ModelChoiceField):
+            department_field.empty_label = "部署を選択してください"
 
 
 class UserLoginForm(AuthenticationForm):

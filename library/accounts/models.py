@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 
 
-class UserManager(BaseUserManager):
+class UserManager(BaseUserManager["User"]):
     def create_user(self, email, em_num, password=None, **extra_fields):
         if not email:
             raise ValueError("メールアドレスは必須です")

@@ -93,7 +93,7 @@ def render_breadcrumbs(context):
             label = getattr(view_class, "breadcrumb_label", None) if view_class else None
 
             # 2. 定義がなければ label_map から取得
-            if not label:
+            if not label and view_name:
                 label = label_map.get(view_name)
 
             # ラベルが見つからない場合は、中間パス（ページがない）とみなしてスキップ

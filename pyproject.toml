@@ -61,11 +61,14 @@ strict_optional = true
 [[tool.mypy.overrides]]
 module = [
     "*.tests.*",
+    "*.admin",
     "core.views.mixins",
     "core.tests.*",
     "accounts.tests.*",
     "catalog.tests.*",
     "transactions.tests.*",
+    "core.models.base",
+    "transactions.models",
 ]
 ignore_errors = true
 
