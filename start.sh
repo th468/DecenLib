@@ -2,5 +2,5 @@
 set -e
 uv run python library/manage.py collectstatic --noinput
 uv run python library/manage.py migrate --noinput
-uv run python library/manage.py seed_db --no-input
+# uv run python library/manage.py seed_db --no-input　　初回のみ実行
 exec uv run gunicorn --chdir library config.wsgi:application --bind 0.0.0.0:${PORT:-10000}
