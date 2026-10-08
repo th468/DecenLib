@@ -17,9 +17,6 @@ RUN uv sync --frozen --no-install-project
 # アプリケーションコード全体をコピー
 COPY . /app/
 
-# 静的ファイルの収集はビルド時に1回だけ行う
-RUN uv run python library/manage.py collectstatic --noinput
-
 # 起動スクリプトを配置
 RUN chmod +x /app/start.sh
 
