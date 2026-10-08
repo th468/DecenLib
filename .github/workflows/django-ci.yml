@@ -39,6 +39,9 @@ jobs:
 
     # ステップ 6: mypy による静的型チェック
     - name: Run mypy type check
+      env:
+        SECRET_KEY: "django-insecure-dummy-key-for-ci-testing"
+        DJANGO_SETTINGS_MODULE: "config.settings"
       run: uv run mypy .
 
     # ステップ 7: Django 単体テストの実行
