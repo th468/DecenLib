@@ -52,7 +52,7 @@ class Command(BaseCommand):
         self.stdout.write("=== 全データを一掃し、クリーンな再投入を開始します ===")
 
         # 3. データの物理削除
-        self._clear_database()
+        # self._clear_database()
 
         # 4. 基礎データの作成
         admin, depts, categories, floors, shelves, users = self._create_base_data()
