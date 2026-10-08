@@ -28,12 +28,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        # 1. 安全装置: DEBUG=False の場合は実行を拒否
-        if not settings.DEBUG:
-            raise CommandError(
-                "本番環境（DEBUG=False）でシードデータコマンドを実行することはできません。 "
-                "データ損失を防ぐため、実行をキャンセルしました。"
-            )
+        #Renderでのデモデータ作成のため、本番環境でも実行可能に
+
+            # 1. 安全装置: DEBUG=False の場合は実行を拒否
+            # if not settings.DEBUG:
+            #     raise CommandError(
+            #         "本番環境（DEBUG=False）でシードデータコマンドを実行することはできません。 "
+            #         "データ損失を防ぐため、実行をキャンセルしました。"
+            #     )
 
         # 2. 安全装置: 対話型プロンプトによる実行確認
         if not options["no_input"]:
