@@ -17,8 +17,14 @@ RUN uv sync --frozen --no-install-project
 # アプリケーションコード全体をコピー
 COPY . /app/
 
+# 静的ファイルの収集はビルド時に1回だけ行う
+RUN uv run python library/manage.py collectstatic --noinput
+
+# 起動スクリプトを配置
+RUN chmod +x /app/start.sh
+
 # ポートの開放
 EXPOSE 8000
 
 # 本番用 Web サーバー起動コマンド (Gunicorn)
-CMD ["sh", "-c", "uv run python library/manage.py collectstatic --noinput && uv run gunicorn --chdir library config.wsgi:application --bind 0.0.0.0:$PORT"]
+CMD ["/app/start.sh"]
